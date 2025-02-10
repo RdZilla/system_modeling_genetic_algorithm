@@ -1,0 +1,26 @@
+volumes:
+  pg_data: { }
+
+services:
+  postgres:
+    container_name: postgres_alert_system
+    image: postgres:15-alpine
+    env_file:
+      - .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./postgresql/dumps:/modeling_system/dumps
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  web:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/modeling_system
+    ports:
+      - '8000:8000'
+    depends_on:
+      - postgres
