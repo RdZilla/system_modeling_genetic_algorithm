@@ -9,7 +9,7 @@ class UserConfig(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='User')
 
     def __str__(self):
-        return f"Config for {self.user.username}"
+        return f"Config id: {self.id} by {self.user.username}"
 
     class Meta:
         verbose_name = 'User Config'
