@@ -1,3 +1,7 @@
 .venv
 .idea
 .env
+*.log
+*.json
+*.csv
+*.png
