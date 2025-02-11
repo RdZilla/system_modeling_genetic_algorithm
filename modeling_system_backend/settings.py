@@ -139,6 +139,6 @@ SPECTACULAR_SETTINGS = {
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    # 'DEFAULT_PAGINATION_CLASS': 'alert_system.pagination.CustomPagination',
-    # 'PAGE_SIZE': 10,
+    'DEFAULT_PAGINATION_CLASS': 'modeling_system_backend.pagination.CustomPagination',
+    'PAGE_SIZE': 10,
 }
