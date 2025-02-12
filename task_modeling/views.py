@@ -3,7 +3,8 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from api.utils.custom_logger import ExperimentLogger
-from api.utils.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES
+from api.utils.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, \
+    SCHEMA_PERMISSION_DENIED
 from core.fitness.rastrigin_fitness import rastrigin
 from core.models.master_worker_model import MasterWorkerGA
 
@@ -21,7 +22,8 @@ class TaskView(generics.ListCreateAPIView):
         description="Get list of tasks",
         responses={
             status.HTTP_200_OK: TaskSerializer,
-            **SCHEMA_GET_POST_STATUSES
+            **SCHEMA_GET_POST_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
         }
     )
     def get(self, request, *args, **kwargs):
@@ -36,13 +38,15 @@ class TaskView(generics.ListCreateAPIView):
                 value={
                     "name": "Task name",
                     "status": "create",
+                    "config": "123"
                 },
                 request_only=True
             ),
         ],
         responses={
             status.HTTP_201_CREATED: TaskSerializer,
-            **SCHEMA_GET_POST_STATUSES
+            **SCHEMA_GET_POST_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
         }
     )
     def post(self, request, *args, **kwargs):
@@ -58,7 +62,8 @@ class TaskManagementView(generics.RetrieveAPIView):
         summary="Start task by id",
         responses={
             status.HTTP_200_OK: TaskSerializer,
-            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES
+            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
         }
     )
     def get(self, request, *args, **kwargs):
@@ -95,6 +100,8 @@ class TaskManagementView(generics.RetrieveAPIView):
 
         # TODO: Убрать из абстрактного класса абстракцию с методов на селекцию, кроссинговер и мутацию.
         #  Реализовать в абстрактном классе логики селекции, кроссинговера и мутацию и наследовать их в каждом алгоритме
+
+        # TODO: Добавить валидацию данных
 
         match fitness_function:
             case "rastrigin":

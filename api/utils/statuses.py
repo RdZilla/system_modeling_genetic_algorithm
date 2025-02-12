@@ -13,14 +13,14 @@ SCHEMA_PERMISSION_DENIED = {
     status.HTTP_403_FORBIDDEN: inline_serializer(
         "Forbidden",
         {
-            "detail_": serializers.CharField(default="Authentication credentials were not provided."),
+            "detail": serializers.CharField(default="Authentication credentials were not provided."),
         }
     )
 }
 
 STATUS_204 = {
     status.HTTP_204_NO_CONTENT: inline_serializer(
-        "No Content",
+        "No_Content",
         {
             "detail": serializers.CharField(default="No Content"),
         }
@@ -29,7 +29,7 @@ STATUS_204 = {
 
 STATUS_400 = {
     status.HTTP_400_BAD_REQUEST: inline_serializer(
-        "Bad Request",
+        "Bad_Request",
         {
             "detail": serializers.CharField(default="Bad Request"),
         }
@@ -38,7 +38,7 @@ STATUS_400 = {
 
 STATUS_404 = {
     status.HTTP_404_NOT_FOUND: inline_serializer(
-        "Not Found",
+        "Not_Found",
         {
             "detail": serializers.CharField(default="Not Found"),
         }
@@ -47,7 +47,7 @@ STATUS_404 = {
 
 STATUS_500 = {
     status.HTTP_500_INTERNAL_SERVER_ERROR: inline_serializer(
-        "Internal Server Error",
+        "Internal_Server_Error",
         {
             "detail": serializers.CharField(default="Internal Server Error"),
         }
