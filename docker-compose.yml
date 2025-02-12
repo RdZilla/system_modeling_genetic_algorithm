@@ -18,6 +18,8 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      POSTGRES_HOST: postgres
     volumes:
       - .:/modeling_system
     ports:
