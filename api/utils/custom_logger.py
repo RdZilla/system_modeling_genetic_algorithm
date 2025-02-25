@@ -12,18 +12,20 @@ CSV_FOLDER = "csv"
 PNG_FOLDER = "png"
 
 
-def get_logger(experiment_name, task_config_id, user_id, task_model):
+def get_logger(task_name, task_config_id, user_id, task_model):
     """Создаёт и возвращает логгер с динамическим именем файла"""
 
     today_timestamp = datetime.datetime.today().strftime("%Y_%m_%d_%H_%M")
-    experiment_stamp = f"{experiment_name}__config-{task_config_id}__{today_timestamp}"
+    experiment_stamp = f"{task_name}__config-{task_config_id}__{today_timestamp}"
 
     # Динамическое имя файла с датой и именем задачи
-    log_filename = f"{experiment_stamp}.log"  # user/task_name/timestamp/model_ga_name
+    log_filename = f"{experiment_stamp}.log"  # user/experiment_number/model_ga_name
     user_folder_name = f"user_id-{user_id}"
     user_folder_path = os.path.join(RESULT_ROOT, user_folder_name)
-    task_folder_path = os.path.join(user_folder_path)
+    task_folder_path = os.path.join(user_folder_path, task_name)
+
     timestamp_folder_path = os.path.join(task_folder_path, today_timestamp)
+
     ga_model_folder_path = os.path.join(timestamp_folder_path, task_model)
 
     os.makedirs(ga_model_folder_path, exist_ok=True)
@@ -48,8 +50,8 @@ def get_logger(experiment_name, task_config_id, user_id, task_model):
 class ExperimentLogger:
     """Логирование работы ГА"""
 
-    def __init__(self, experiment_name, task_config_id, user_folder, task_model):
-        logger = get_logger(experiment_name, task_config_id, user_folder, task_model)
+    def __init__(self, experiment_name, task_config_id, user_id, task_model):
+        logger = get_logger(experiment_name, task_config_id, user_id, task_model)
 
         self.logger_log = logger
         self.log_file_json = self.get_json_log_path(logger)
