@@ -3,10 +3,12 @@ import csv
 
 import matplotlib.pyplot as plt
 
+
 def save_results_json(results, filename="results/output.json"):
     """Сохранение результатов в JSON"""
     with open(filename, "w") as f:
         json.dump(results, f, indent=4)
+
 
 def save_results_csv(results, filename="results/output.csv"):
     """Сохранение результатов в CSV"""
