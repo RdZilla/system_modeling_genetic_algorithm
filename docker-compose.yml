@@ -14,15 +14,15 @@ services:
       - "5432:5432"
     restart: unless-stopped
 
-  web:
-    build: .
-    env_file:
-      - .env
-    environment:
-      POSTGRES_HOST: postgres
-    volumes:
-      - .:/modeling_system
-    ports:
-      - '8000:8000'
-    depends_on:
-      - postgres
+#  web:
+#    build: .
+#    env_file:
+#      - .env
+#    environment:
+#      POSTGRES_HOST: postgres
+#    volumes:
+#      - .:/modeling_system
+#    ports:
+#      - '8000:8000'
+#    depends_on:
+#      - postgres
