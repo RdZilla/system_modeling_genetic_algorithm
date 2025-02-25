@@ -35,7 +35,7 @@ class MasterWorkerGA(GeneticAlgorithm):
 
     def run(self, generations):
         """Запуск алгоритма"""
-        for gen in range(generations):
+        for gen in range(generations):  # TODO: add try-except block to set status ERROR
             fitness_values = self.evaluate_fitness()
             new_population = []
             for _ in range(self.population_size // 2):  # TODO <---- range(self.population_size // 2)     ???????

@@ -1,0 +1,3 @@
+# Folder for result files
+
+---
