@@ -109,6 +109,7 @@ STATIC_URL = 'static/'
 MEDIA_ROOT = os.environ.get("MEDIA_ROOT", default=os.path.join(BASE_DIR, 'media'))
 
 LOG_ROOT = os.getenv("LOG_ROOT", default=os.path.join(MEDIA_ROOT, 'logs'))
+RESULT_ROOT = os.getenv("RESULT_ROOT", default=os.path.join(MEDIA_ROOT, 'results'))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

@@ -81,8 +81,9 @@ class TaskManagementView(generics.RetrieveAPIView):
 
         task_name = task.name
         task_config_id = task.config_id
-        logger = ExperimentLogger(task_name, task_config_id)
-
+        user_id = task.user_id
+        task_model = task.task_model
+        logger = ExperimentLogger(task_name, task_config_id, user_id, task_model)
 
         task_config = task.config.config
         algorithm_type = task_config.get("algorithm")
