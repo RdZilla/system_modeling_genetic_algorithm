@@ -54,9 +54,25 @@ class TaskView(generics.ListCreateAPIView):
 
 
 class TaskManagementView(generics.RetrieveAPIView):
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
 
+    def get_object(self):
+        task_id = self.kwargs.get("task_id")
+        task_obj = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(id=task_id).first()
+        if not task_obj:
+            return Response({"detail": "Object has not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        user_id = self.request.user
+
+        experiment_by_user_id = task_obj.experiment.user_id
+
+        if user_id != experiment_by_user_id:
+            return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return task_obj
+    #
     @extend_schema(
         tags=['Tasks'],
         summary="Start task by id",
@@ -68,6 +84,13 @@ class TaskManagementView(generics.RetrieveAPIView):
     )
     def get(self, request, *args, **kwargs):
         task = self.get_object()
+        if isinstance(task, Response):
+            return task
+
+        # validate_data = self.validate_data(task)
+        # TODO add error response if validate is not sucsessfull
+        # TODO create periodic task and 200 response
+
         response = self.run(task)
 
         response_status = status.HTTP_200_OK
@@ -79,11 +102,11 @@ class TaskManagementView(generics.RetrieveAPIView):
     def run(task: Task) -> dict:
         response = {}
 
-        task_name = task.name
-        task_config_id = task.config_id
-        user_id = task.user_id
-        task_model = task.task_model
-        logger = ExperimentLogger(task_name, task_config_id, user_id, task_model)
+        experiment_name = task.experiment.name
+        user_id = task.experiment.user_id
+        task_id = task.id
+
+        logger = ExperimentLogger(experiment_name, user_id, task_id)
 
         task_config = task.config.config
         algorithm_type = task_config.get("algorithm")
@@ -113,14 +136,15 @@ class TaskManagementView(generics.RetrieveAPIView):
 
         match algorithm_type:
             case "master_worker":
-                ga = MasterWorkerGA(
+                ga = MasterWorkerGA(  # TODO проверить нужно ли передавать сюда количество генераций
                     population_size=population_size,
                     mutation_rate=mutation_rate,
                     crossover_rate=crossover_rate,
                     fitness_function=fitness_function,
                     logger=logger
-
                 )
+                # TODO проверить нужно ли передавать сюда количество генераций
+                # TODO по идее да, нам нужно останавливать расчёт, если количество генераций > чем заявлено в параметре generations
             case _:
                 response["error"] = "Invalid algorithm type"
                 return response

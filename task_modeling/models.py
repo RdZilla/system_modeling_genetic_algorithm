@@ -60,8 +60,8 @@ class TaskConfig(models.Model):
         return f"Config id: {self.id} by {self.user.username}"
 
     class Meta:
-        verbose_name = "User Config"
-        verbose_name_plural = "User Configs"
+        verbose_name = "Конфигурация задачи"
+        verbose_name_plural = "Конфигурации задачи"
 
 
 class Task(models.Model):
@@ -80,7 +80,8 @@ class Task(models.Model):
             (ERROR, "Ошибка"),
         )
 
-    status = models.CharField(max_length=255, choices=Action.CHOICES_STATUSES, verbose_name="Статус задачи")
+    status = models.CharField(max_length=255, choices=Action.CHOICES_STATUSES, verbose_name="Статус задачи",
+                              default=Action.CREATED)
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Время создания",
                                       help_text="Время создания задачи")
@@ -95,5 +96,5 @@ class Task(models.Model):
         return f"{self.id} with config id: {self.config_id}"
 
     class Meta:
-        verbose_name = "Task"
-        verbose_name_plural = "Tasks"
+        verbose_name = "Задача"
+        verbose_name_plural = "Задачи"
