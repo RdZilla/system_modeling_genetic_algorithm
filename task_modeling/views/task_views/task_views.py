@@ -1,8 +1,9 @@
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework.response import Response
 
 from api.utils.custom_logger import ExperimentLogger
+from api.utils.responses import not_found_response, permission_denied_response
 from api.utils.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, \
     SCHEMA_PERMISSION_DENIED
 from core.fitness.rastrigin_fitness import rastrigin
@@ -13,8 +14,16 @@ from task_modeling.serializers import TaskSerializer
 
 
 class TaskView(generics.ListCreateAPIView):
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        experiment_id = self.kwargs.get("experiment_id")
+
+        queryset = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(experiment_id=experiment_id)
+        return queryset
+
 
     @extend_schema(
         tags=["Tasks"],
@@ -36,9 +45,8 @@ class TaskView(generics.ListCreateAPIView):
             OpenApiExample(
                 name='Example of an task create request',
                 value={
-                    "name": "Task name",
-                    "status": "create",
-                    "config": "123"
+                    "config_id": "123",
+                    "experiment_id": "1"
                 },
                 request_only=True
             ),
@@ -57,25 +65,36 @@ class TaskManagementView(generics.RetrieveAPIView):
     serializer_class = TaskSerializer
 
     def get_object(self):
+        experiment_id = self.kwargs.get("experiment_id")
+
         task_id = self.kwargs.get("task_id")
         task_obj = Task.objects.select_related(
             "config", "experiment"
-        ).filter(id=task_id).first()
+        ).filter(
+            experiment_id=experiment_id,
+            id=task_id
+        ).first()
         if not task_obj:
-            return Response({"detail": "Object has not found"}, status=status.HTTP_404_NOT_FOUND)
+            return not_found_response(f"{experiment_id = } {task_id = }")
 
-        user_id = self.request.user
+        user = self.request.user
 
-        experiment_by_user_id = task_obj.experiment.user_id
+        experiment_by_user = task_obj.experiment.user
 
-        if user_id != experiment_by_user_id:
-            return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        if user != experiment_by_user:
+            return permission_denied_response()
 
         return task_obj
     #
     @extend_schema(
         tags=['Tasks'],
-        summary="Start task by id",
+        summary="Get / Start task by id",
+        parameters=[
+            OpenApiParameter(
+                name="start", description='The parameter for starting the calculations of the task',
+                type=bool, enum=[True, False], required=False
+            ),
+        ],
         responses={
             status.HTTP_200_OK: TaskSerializer,
             **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
@@ -88,15 +107,19 @@ class TaskManagementView(generics.RetrieveAPIView):
             return task
 
         # validate_data = self.validate_data(task)
-        # TODO add error response if validate is not sucsessfull
+        # TODO add error response if validate is not successful
         # TODO create periodic task and 200 response
 
-        response = self.run(task)
+        is_start = request.query_params.get("start", "False")
+        if is_start.lower() == "true":
+            response = self.run(task)
 
-        response_status = status.HTTP_200_OK
-        if "error" in response:
-            response_status = status.HTTP_400_BAD_REQUEST
-        return Response(response, status=response_status)
+            response_status = status.HTTP_200_OK
+            if "error" in response:
+                response_status = status.HTTP_400_BAD_REQUEST
+            return Response(response, status=response_status)
+        return super().get(request, *args, **kwargs)
+
 
     @staticmethod
     def run(task: Task) -> dict:

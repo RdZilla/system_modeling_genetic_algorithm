@@ -1,18 +1,19 @@
 from django.contrib import admin
 
 from task_modeling.models import Task, TaskConfig, Experiment
-from task_modeling.views import TaskManagementView
+from task_modeling.views.task_views.task_views import TaskManagementView
 
 
 @admin.action(description="Запустить выбранные эксперименты")
 def run_experiment_admin(modeladmin, request, queryset):
     return
 
+
 @admin.register(Experiment)
 class ExperimentAdmin(admin.ModelAdmin):
     list_select_related = ("user",)
 
-    list_display = ("id", "name", "created_at", "user")
+    list_display = ("id", "status", "name", "created_at", "user")
     search_fields = ("name",)
     list_filter = ("status",)
     list_per_page = 10
@@ -31,12 +32,13 @@ def run_task_admin(modeladmin, request, queryset):
         list_response.append(response)
     return list_response
 
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_select_related = ("experiment", "config")
 
-    list_display = ("id", "status", "config_id", "experiment", "created_at")
-    list_filter = ("status", "experiment", "config_id")
+    list_display = ("id", "status", "config_id", "experiment", "created_at", "experiment_id")
+    list_filter = ("status", "experiment_id", "config_id")
     list_per_page = 10
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
