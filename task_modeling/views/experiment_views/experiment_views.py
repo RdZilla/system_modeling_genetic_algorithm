@@ -1,15 +1,22 @@
+import os
+import shutil
+
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from api.utils.responses import bad_request_response, created_response, not_found_response, permission_denied_response
-from api.utils.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, \
-    SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES
+from api.responses import bad_request_response, created_response, not_found_response, permission_denied_response, \
+    no_content_response, success_response
+from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, \
+    SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, STATUS_204, STATUS_405
+from api.utils.custom_logger import get_user_folder_name
+from modeling_system_backend.settings import RESULT_ROOT
 from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 from task_modeling.models import Experiment, Task
 from task_modeling.serializers import ExperimentSerializer
+from task_modeling.utils.start_task import run_task
 
 
 class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
@@ -77,10 +84,11 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         experiment_user_id = request.data.get("user", None)
         configs = request.data.get("configs", [])
 
-        user = self.validate_experiment_data(experiment_name, experiment_user_id)
+        validate_response = self.validate_experiment_data(experiment_name)
+        if isinstance(validate_response, Response):
+            return validate_response
 
-        if isinstance(user, Response):
-            return user
+        user = get_object_or_404(User, id=experiment_user_id)
 
         error_task_configs, existing_configs, created_configs = self.get_or_create_task_config(configs, user)
         if error_task_configs:
@@ -103,26 +111,19 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
     @staticmethod
     def validate_experiment_data(
             experiment_name: (str | None),
-            experiment_user_id: (str | None),
-    ) -> (Response | User):
+    ) -> (Response | None):
         """
         Validation of input parameters when creating an experiment.\n
         if the function returns None, it means that the validation was successful.\n
         if the function returns any kind of Response, it means that the validation passed with errors.
         :param experiment_name: name of the future experiments
-        :param experiment_user_id: the ID of the user who initiated the future experiments
-        :return: Error response or User obj
+        :return: Error response
         """
         if not experiment_name:
             error_text = "Название эксперимента должно быть заполнено"
             return bad_request_response(error_text)
 
-        user = get_object_or_404(User, id=experiment_user_id)
-
-        return user
-
-
-class ExperimentManagementView(generics.RetrieveAPIView):
+class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ExperimentSerializer
 
     def get_object(self):
@@ -164,5 +165,113 @@ class ExperimentManagementView(generics.RetrieveAPIView):
 
         is_start = request.query_params.get("start", "False")
         if is_start.lower() == "true":
-            return Response({}, 501)   # TODO реализовать запуск
+
+            tasks = Task.objects.select_related(
+                "config", "experiment"
+            ).filter(
+                experiment=experiment,
+                status=Task.Action.CREATED
+            )
+
+            if not tasks:
+                experiment_id = experiment.id
+                return not_found_response(f"task with {experiment_id = }")
+
+            experiment.status = Experiment.Action.STARTED
+            experiment.save()
+
+            response_list = []
+            error_list = []
+
+            for task in tasks:
+                response = run_task(task)
+                if "error" in response:
+                    error_list.append({task.id: response})
+                    continue
+                response_list.append(response)
+
+            if error_list:
+                experiment.status = Experiment.Action.ERROR
+                experiment.save()
+                return bad_request_response(error_list)
+
+            experiment.status = Experiment.Action.FINISHED
+            experiment.save()
+            return success_response(response_list)
+
         return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=['Experiments'],
+        summary="Update experiment",
+        description="METHOD NOT ALLOWED",
+        responses={
+            **STATUS_405
+        }
+    )
+    def put(self, request, *args, **kwargs):
+        return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @extend_schema(
+        tags=['Experiments'],
+        summary="Partial update experiment",
+        examples=[
+            OpenApiExample(
+                name='Example of an experiment partial update request',
+                value={
+                    "name": "Task name",
+                },
+                request_only=True
+            ),
+        ],
+        responses={
+            status.HTTP_201_CREATED: ExperimentSerializer,
+            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
+        }
+    )
+    def patch(self, request, *args, **kwargs):
+        # experiment = self.get_object()
+        # user = self.request.user
+        # configs = request.data.get("configs", {})
+        # if configs:
+        #     error_task_configs, existing_config, created_configs = self.get_or_create_task_config(configs, user)
+
+        return super().patch(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=['Experiments'],
+        summary="Delete experiment",
+        responses={
+            **STATUS_204,
+            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
+            **SCHEMA_PERMISSION_DENIED,
+        }
+    )
+    def delete(self, request, *args, **kwargs):
+        experiment = self.get_object()
+        user = self.request.user
+
+        if isinstance(experiment, Response):
+            return experiment
+
+        experiment_id = experiment.id
+
+
+        experiment_is_started = experiment.status == Experiment.Action.STARTED
+        tasks_qs = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(experiment=experiment)
+
+        active_tasks = tasks_qs.filter(status=Task.Action.STARTED)
+        if experiment_is_started or active_tasks:
+            return bad_request_response("Active")
+
+        user_id = user.id
+        user_folder_name = get_user_folder_name(user_id)
+        experiment_name = experiment.name
+        shutil.rmtree(os.path.join(RESULT_ROOT, user_folder_name, experiment_name), ignore_errors=True)
+
+        experiment.delete()
+        tasks_qs.delete()
+        return no_content_response(experiment_id)

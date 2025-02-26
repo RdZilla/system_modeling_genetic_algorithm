@@ -45,6 +45,15 @@ STATUS_404 = {
     )
 }
 
+STATUS_405 = {
+    status.HTTP_405_METHOD_NOT_ALLOWED: inline_serializer(
+        "Not_Found",
+        {
+            "detail": serializers.CharField(default="Method not allowed"),
+        }
+    )
+}
+
 STATUS_500 = {
     status.HTTP_500_INTERNAL_SERVER_ERROR: inline_serializer(
         "Internal_Server_Error",

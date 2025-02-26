@@ -1,16 +1,20 @@
+import os
+import shutil
+
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from api.utils.custom_logger import ExperimentLogger
-from api.utils.responses import not_found_response, permission_denied_response
-from api.utils.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, \
-    SCHEMA_PERMISSION_DENIED
-from core.fitness.rastrigin_fitness import rastrigin
-from core.models.master_worker_model import MasterWorkerGA
+from api.responses import not_found_response, permission_denied_response, bad_request_response, no_content_response
+from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, \
+    SCHEMA_PERMISSION_DENIED, STATUS_204
+from api.utils.custom_logger import get_user_folder_name, get_task_folder_name
+from modeling_system_backend.settings import RESULT_ROOT
 
 from task_modeling.models import Task
 from task_modeling.serializers import TaskSerializer
+from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
+from task_modeling.utils.start_task import run_task
 
 
 class TaskView(generics.ListCreateAPIView):
@@ -61,7 +65,7 @@ class TaskView(generics.ListCreateAPIView):
         return super().post(request, *args, **kwargs)
 
 
-class TaskManagementView(generics.RetrieveAPIView):
+class TaskManagementView(generics.RetrieveAPIView, generics.DestroyAPIView, PrepareTaskConfigMixin):
     serializer_class = TaskSerializer
 
     def get_object(self):
@@ -112,7 +116,7 @@ class TaskManagementView(generics.RetrieveAPIView):
 
         is_start = request.query_params.get("start", "False")
         if is_start.lower() == "true":
-            response = self.run(task)
+            response = run_task(task)
 
             response_status = status.HTTP_200_OK
             if "error" in response:
@@ -120,67 +124,33 @@ class TaskManagementView(generics.RetrieveAPIView):
             return Response(response, status=response_status)
         return super().get(request, *args, **kwargs)
 
+    @extend_schema(
+        tags=['Tasks'],
+        summary="Delete task",
+        responses={
+            **STATUS_204,
+            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
+            **SCHEMA_PERMISSION_DENIED,
+        }
+    )
+    def delete(self, request, *args, **kwargs):
+        task = self.get_object()
+        user = self.request.user
+        if isinstance(task, Response):
+            return task
 
-    @staticmethod
-    def run(task: Task) -> dict:
-        response = {}
+        if task.status == Task.Action.STARTED:
+            return bad_request_response("Active")
+
+        user_id = user.id
+        user_folder_name = get_user_folder_name(user_id)
 
         experiment_name = task.experiment.name
-        user_id = task.experiment.user_id
+
         task_id = task.id
+        task_folder_name = get_task_folder_name(task_id)
 
-        logger = ExperimentLogger(experiment_name, user_id, task_id)
+        shutil.rmtree(os.path.join(RESULT_ROOT, user_folder_name, experiment_name, task_folder_name), ignore_errors=True)
 
-        task_config = task.config.config
-        algorithm_type = task_config.get("algorithm")
-
-        generations = task_config.get("generations")
-
-        population_size = task_config.get("population_size")
-        mutation_rate = task_config.get("mutation_rate")
-        crossover_rate = task_config.get("crossover_rate")
-
-        fitness_function = task_config.get("fitness_function")
-        # selection_function = ...  TODO: add selection_function
-        # crossover_function = ...  TODO: add crossover_function
-        # mutation_function = ...   TODO: add mutation_function
-
-        # TODO: Убрать из абстрактного класса абстракцию с методов на селекцию, кроссинговер и мутацию.
-        #  Реализовать в абстрактном классе логики селекции, кроссинговера и мутацию и наследовать их в каждом алгоритме
-
-        # TODO: Добавить валидацию данных
-
-        match fitness_function:
-            case "rastrigin":
-                fitness_function = rastrigin
-            case _:
-                response["error"] = "Invalid fitness function"
-                return response
-
-        match algorithm_type:
-            case "master_worker":
-                ga = MasterWorkerGA(  # TODO проверить нужно ли передавать сюда количество генераций
-                    population_size=population_size,
-                    mutation_rate=mutation_rate,
-                    crossover_rate=crossover_rate,
-                    fitness_function=fitness_function,
-                    logger=logger
-                )
-                # TODO проверить нужно ли передавать сюда количество генераций
-                # TODO по идее да, нам нужно останавливать расчёт, если количество генераций > чем заявлено в параметре generations
-            case _:
-                response["error"] = "Invalid algorithm type"
-                return response
-
-        logger.logger_log.info(f"Task {task.id} started with config: {task_config}")
-        # try:
-        #     ga.run(generations)
-        # except Exception as e:
-        #     logger.logger_log.error(f"Task {task.id} failed with error: {e}")
-        #     response["error"] = str(e)
-        #     return response
-
-        ga.run(generations)
-
-        response["message"] = f"Task {task.id} started successfully"
-        return response
+        task.delete()
+        return no_content_response(task_id)

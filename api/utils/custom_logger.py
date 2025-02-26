@@ -10,12 +10,21 @@ RESULT_ROOT = settings.RESULT_ROOT
 TEXT_LOG_FILE_NAME = "text_log.log"
 JSON_LOG_FILE_NAME = "json_log.json"
 
+
+def get_user_folder_name(user_id):
+    return f"user_id-{user_id}"
+
+
+def get_task_folder_name(task_id):
+    return f"task_id-{task_id}"
+
+
 def get_logger(experiment_name, user_id, task_id):
     """Создаёт и возвращает логгер с динамическим именем файла"""
 
     # Динамическое имя файла с датой и именем задачи
-    user_folder_name = f"user_id-{user_id}"
-    task_folder_name = f"task_id-{task_id}"
+    user_folder_name = get_user_folder_name(user_id)
+    task_folder_name = get_task_folder_name(task_id)
     results_folder_path = os.path.join(RESULT_ROOT, user_folder_name, experiment_name, task_folder_name)
 
     os.makedirs(results_folder_path, exist_ok=True)

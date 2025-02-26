@@ -5,6 +5,15 @@ from core.models.GA_base_model import GeneticAlgorithm
 
 
 class MasterWorkerGA(GeneticAlgorithm):
+    required_params = [
+        "algorithm",
+        "generations",
+        "population_size",
+        "mutation_rate",
+        "crossover_rate",
+        "fitness_function",
+    ]
+
     def initialize_population(self):
         """Генерация случайной популяции"""
         return [random.uniform(-5.12, 5.12) for _ in range(self.population_size)]  # Пример для одномерной задачи
