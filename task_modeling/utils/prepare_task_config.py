@@ -1,35 +1,52 @@
 from django.contrib.auth.models import User
 
+from core.models.master_worker_model import MasterWorkerGA
 from task_modeling.models import TaskConfig
 
 
 class PrepareTaskConfigMixin:
-    required_params = []
-    order_possible_params = []
+    order_possible_params = [
+        "algorithm",
+        "generations",
+        "population_size",
+        "selection_function",
+        "mutation_rate",
+        "mutation_function",
+        "crossover_rate",
+        "crossover_function",
+        "fitness_function",
+    ]
 
     @classmethod
     def validate_task_config(
             cls,
             config: dict,
             config_name: (str | None),
-            task_config: dict
-    ):
+            task_config: dict,
+            partial_check=False
+    ) -> (dict | None):
         """
         Function for validate task config
-        :param config:
-        :param config_name:
-        :param task_config:
-        :return:
+        :param config: Configuration requiring validation
+        :param config_name: Configuration name requiring validation
+        :param task_config: Configuration task requiring validation
+        :param partial_check: Partial check
+        :return: Configuration that has not passed validation
         """
-        if not config_name:
+        if not config_name and not partial_check:
             return config
-
-        for required_param in cls.required_params:  # TODO: для каждой модели настроить свои требуемые параметры
+        algorithm_type = task_config.get("algorithm")
+        match algorithm_type:
+            case "master_worker":
+                required_params = MasterWorkerGA.required_params
+            case _:
+                return config
+        for required_param in required_params:
             if required_param not in task_config:
                 return config
 
     @classmethod
-    def order_params_task_config(cls, config: dict):
+    def order_params_task_config(cls, config: dict) -> dict:
         """
         Function for ordering task config.\n
         It's necessary to eliminate duplicates in TaskConfig model.
@@ -60,16 +77,16 @@ class PrepareTaskConfigMixin:
 
             task_config = cls.order_params_task_config(task_config)
 
-            task_config = TaskConfig.objects.filter(config=task_config).first()
-            if task_config:
-                existing_config.append(task_config)
+            task_config_obj = TaskConfig.objects.filter(config=task_config, user=user).first()
+            if task_config_obj:
+                existing_config.append(task_config_obj)
             else:
-                task_config = TaskConfig.objects.create(
+                task_config_obj = TaskConfig.objects.create(
                     name=config_name,
                     config=task_config,
                     user=user
                 )
-                created_configs.append(task_config)
+                created_configs.append(task_config_obj)
 
         if error_configs:
             return error_task_configs, existing_config, error_configs

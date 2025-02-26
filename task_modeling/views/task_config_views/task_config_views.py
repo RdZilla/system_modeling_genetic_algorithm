@@ -4,11 +4,11 @@ from drf_spectacular.utils import extend_schema, OpenApiExample
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from api.utils.responses import not_found_response, permission_denied_response, bad_request_response, conflict_response, \
-    created_response
-from api.utils.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, \
-    SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES
-from task_modeling.models import TaskConfig
+from api.responses import not_found_response, permission_denied_response, bad_request_response, conflict_response, \
+    created_response, success_response, no_content_response
+from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, \
+    SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, STATUS_405, STATUS_204
+from task_modeling.models import TaskConfig, Task
 from task_modeling.serializers import TaskSerializer, TaskConfigSerializer
 from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 
@@ -80,7 +80,7 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         return created_response(created_config_id)
 
 
-class TaskConfigManagementView(generics.RetrieveAPIView):
+class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TaskConfigSerializer
 
     def get_object(self):
@@ -112,3 +112,140 @@ class TaskConfigManagementView(generics.RetrieveAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=['Experiments'],
+        summary="Update task config",
+        examples=[
+            OpenApiExample(
+                name='Example of an task config update request',
+                value={
+                    "name": "Task name",
+                    "config": {
+                        "algorithm": "master_worker",
+                        "generations": 100,
+                        "mutation_rate": 0.05,
+                        "crossover_rate": 0.9,
+                        "population_size": 200,
+                        "fitness_function": "rastrigin"
+                    }
+                },
+                request_only=True
+            ),
+        ],
+        responses={
+            **STATUS_405
+        }
+    )
+    def put(self, request, *args, **kwargs):
+        task_config = self.get_object()
+        if isinstance(task_config, Response):
+            return task_config
+
+        task_config_id = task_config.id
+        task_obj = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(config_id=task_config_id, status=Task.Action.STARTED)
+        if task_obj:
+            return bad_request_response("Существуют запущенные задачи с этой конфигурацией")
+
+        task_name = request.data.get("name", None)
+
+        user = self.request.user
+        config = request.data.get("config", {})
+        error_config = PrepareTaskConfigMixin.validate_task_config(config, task_name, config,
+                                                                   partial_check=False)
+        if error_config:
+            return bad_request_response("Ошибка валидации конфигурации")
+
+        config = PrepareTaskConfigMixin.order_params_task_config(config)
+        task_config_obj = TaskConfig.objects.filter(config=config, user=user).first()
+        if task_config_obj:
+            return bad_request_response("Конфигурация задачи уже существует")
+
+
+        task_config.name = task_name
+        task_config.config = config
+        task_config.save()
+        return success_response(task_config.id)
+
+    @extend_schema(
+        tags=['Experiments'],
+        summary="Partial update experiment",
+        examples=[
+            OpenApiExample(
+                name='Example of an experiment partial update request',
+                value={
+                    "name": "Task name",
+                    "config": {
+                        "algorithm": "master_worker",
+                        "generations": 100,
+                        "mutation_rate": 0.05,
+                        "crossover_rate": 0.9,
+                        "population_size": 200,
+                        "fitness_function": "rastrigin"
+                    }
+                },
+                request_only=True
+            ),
+        ],
+        responses={
+            status.HTTP_201_CREATED: TaskConfigSerializer,
+            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
+        }
+    )
+    def patch(self, request, *args, **kwargs):
+        task_config = self.get_object()
+        if isinstance(task_config, Response):
+            return task_config
+
+        task_config_id = task_config.id
+        task_obj = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(config_id=task_config_id, status=Task.Action.STARTED)
+        if task_obj:
+            return bad_request_response("Существуют запущенные задачи с этой конфигурацией")
+
+        task_name = request.data.get("name", None)
+        if task_name:
+            task_config.name = task_name
+        user = self.request.user
+        config = request.data.get("config", {})
+        if config:
+            error_config = PrepareTaskConfigMixin.validate_task_config(config, None, config,
+                                                                       partial_check=True)
+            if error_config:
+                return bad_request_response("Ошибка валидации конфигурации")
+
+            config = PrepareTaskConfigMixin.order_params_task_config(config)
+            task_config_obj = TaskConfig.objects.filter(config=config, user=user).first()
+            if task_config_obj:
+                return bad_request_response("Конфигурация задачи уже существует")
+            task_config.config = config
+        task_config.save()
+        return success_response(task_config.id)
+
+    @extend_schema(
+        tags=['Experiments'],
+        summary="Delete experiment",
+        responses={
+            **STATUS_204,
+            **SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES,
+            **SCHEMA_PERMISSION_DENIED,
+        }
+    )
+    def delete(self, request, *args, **kwargs):
+        task_config = self.get_object()
+        if isinstance(task_config, Response):
+            return task_config
+
+        task_config_id = task_config.id
+        task_obj = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(config_id=task_config_id, status=Task.Action.STARTED)
+        if task_obj:
+            return bad_request_response("Существуют запущенные задачи с этой конфигурацией")
+
+        task_config.delete()
+        return no_content_response(task_config_id)
