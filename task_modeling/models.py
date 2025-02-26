@@ -4,18 +4,18 @@ from django.db import models
 
 class Experiment(models.Model):
     class Action:
-        CREATE = "create"
-        UPDATE = "update"
-        DELETE = "delete"
+        CREATED = "created"
+        UPDATED = "updated"
+        DELETED = "deleted"
         STARTED = "started"
         FINISHED = "finished"
         STOPPED = "stopped"
         ERROR = "error"
 
         CHOICES_STATUSES = (
-            (CREATE, "Создан"),
-            (UPDATE, "Обновлен"),
-            (DELETE, "Удалён"),
+            (CREATED, "Создан"),
+            (UPDATED, "Обновлен"),
+            (DELETED, "Удалён"),
 
             (STARTED, "Запущен"),
             (FINISHED, "Завершен"),
@@ -24,9 +24,8 @@ class Experiment(models.Model):
         )
 
     name = models.CharField(max_length=255, verbose_name="Название эксперимента")
-    status = models.CharField(max_length=255, choices=Action.CHOICES_STATUSES, default=Action.CREATE,
+    status = models.CharField(max_length=255, choices=Action.CHOICES_STATUSES, default=Action.CREATED,
                               verbose_name="Статус эксперимента")
-    results_folder = models.CharField(max_length=255, verbose_name="Папка результатов", blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Время создания",
                                       help_text="Время создания эксперимента")
