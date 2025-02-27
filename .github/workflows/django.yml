@@ -46,13 +46,23 @@ jobs:
 
     - name: 🔧 Применение миграций
       env:
-        DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+        DB_ENGINE: ${{ secrets.DB_ENGINE }}
+        DB_NAME: ${{ secrets.POSTGRES_DB }}
+        DB_USER: ${{ secrets.POSTGRES_USER }}
+        DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        DB_HOST: ${{ secrets.POSTGRES_HOST }}
+        DB_PORT: ${{ secrets.POSTGRES_PORT }}
       run: |
         python manage.py migrate
 
     - name: ✅ Запуск тестов с `pytest`
       env:
-        DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+        DB_ENGINE: ${{ secrets.DB_ENGINE }}
+        DB_NAME: ${{ secrets.POSTGRES_DB }}
+        DB_USER: ${{ secrets.POSTGRES_USER }}
+        DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        DB_HOST: ${{ secrets.POSTGRES_HOST }}
+        DB_PORT: ${{ secrets.POSTGRES_PORT }}
       run: |
         pytest --cov=. --cov-report=xml
 
