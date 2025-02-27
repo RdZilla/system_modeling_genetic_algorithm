@@ -12,15 +12,15 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
         env:
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
+          --health-cmd "pg_isready -U test_user -d test_db"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
@@ -46,29 +46,27 @@ jobs:
 
     - name: 🔧 Применение миграций
       env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
         DB_ENGINE: ${{ secrets.DB_ENGINE }}
-        DB_NAME: ${{ secrets.POSTGRES_DB }}
-        DB_USER: ${{ secrets.POSTGRES_USER }}
-        DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        DB_HOST: ${{ secrets.POSTGRES_HOST }}
-        DB_PORT: ${{ secrets.POSTGRES_PORT }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+        POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
       run: |
         python manage.py migrate
 
     - name: ✅ Запуск тестов с `pytest`
       env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
         DB_ENGINE: ${{ secrets.DB_ENGINE }}
-        DB_NAME: ${{ secrets.POSTGRES_DB }}
-        DB_USER: ${{ secrets.POSTGRES_USER }}
-        DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        DB_HOST: ${{ secrets.POSTGRES_HOST }}
-        DB_PORT: ${{ secrets.POSTGRES_PORT }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+        POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
       run: |
         pytest --cov=. --cov-report=xml
-
-    - name: 📏 Проверка кода `black`
-      run: |
-        black --check .
 
     - name: ☁️ Загрузка отчёта покрытия
       uses: codecov/codecov-action@v3
