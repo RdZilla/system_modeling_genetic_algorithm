@@ -46,8 +46,8 @@ jobs:
 
     - name: 🔧 Применение миграций
       env:
-        DB_ENGINE: ${{ secrets.DB_ENGINE }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        DB_ENGINE: ${{ secrets.DB_ENGINE }}
         POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
         POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -58,8 +58,8 @@ jobs:
 
     - name: ✅ Запуск тестов с `pytest`
       env:
-        DB_ENGINE: ${{ secrets.DB_ENGINE }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        DB_ENGINE: ${{ secrets.DB_ENGINE }}
         POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
         POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
