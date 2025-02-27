@@ -33,13 +33,17 @@ INSTALLED_APPS = [
 
     'django.contrib.postgres',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
     'drf_spectacular',
     'drf_spectacular_sidecar',
 
+    'authorization',
     'task_modeling'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -48,6 +52,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", 'True').lower() == 'true'
+if not CORS_ALLOW_ALL_ORIGINS:
+    cors_allowed = os.environ.get("CORS_ALLOWED_ORIGINS")
+    CORS_ALLOWED_ORIGINS = cors_allowed.split(",")
 
 ROOT_URLCONF = 'modeling_system_backend.urls'
 
@@ -95,6 +104,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'authorization.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'Europe/Moscow'
@@ -123,6 +137,9 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'modeling_system_backend.pagination.CustomPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
 
 FileHanddler = 'logging.FileHandler'
