@@ -46,7 +46,6 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                         "example_param_1": "example_value",
                         "example_param_2": "example_value"
                     },
-                    "user": "1",
                 },
                 request_only=True
             ),
@@ -61,9 +60,10 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
 
         config_name = request.data.get("name", None)
         config = request.data.get("config", {})
-        user_id = request.data.get("user", None)
+        # user_id = request.data.get("user", None)
+        # user = get_object_or_404(User, id=user_id)
+        user = self.request.user
 
-        user = get_object_or_404(User, id=user_id)
         configs = [{"name": config_name, "config": config}]
 
         error_task_configs, existing_configs, created_configs = self.get_or_create_task_config(configs, user)
@@ -111,10 +111,13 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         }
     )
     def get(self, request, *args, **kwargs):
+        task_obj = self.get_object()
+        if isinstance(task_obj, Response):
+            return task_obj
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=['Experiments'],
+        tags=['Task Configs'],
         summary="Update task config",
         examples=[
             OpenApiExample(
@@ -155,7 +158,7 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         config = request.data.get("config", {})
         error_config = PrepareTaskConfigMixin.validate_task_config(config, task_name, config,
                                                                    partial_check=False)
-        if error_config:
+        if error_config or error_config == {}:
             return bad_request_response("Ошибка валидации конфигурации")
 
         config = PrepareTaskConfigMixin.order_params_task_config(config)
@@ -170,7 +173,7 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         return success_response(task_config.id)
 
     @extend_schema(
-        tags=['Experiments'],
+        tags=['Task Configs'],
         summary="Partial update experiment",
         examples=[
             OpenApiExample(
@@ -215,7 +218,7 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         if config:
             error_config = PrepareTaskConfigMixin.validate_task_config(config, None, config,
                                                                        partial_check=True)
-            if error_config:
+            if error_config or error_config == {}:
                 return bad_request_response("Ошибка валидации конфигурации")
 
             config = PrepareTaskConfigMixin.order_params_task_config(config)
@@ -227,7 +230,7 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         return success_response(task_config.id)
 
     @extend_schema(
-        tags=['Experiments'],
+        tags=['Task Configs'],
         summary="Delete experiment",
         responses={
             **STATUS_204,
