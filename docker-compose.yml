@@ -14,8 +14,40 @@ services:
       - "5432:5432"
     restart: unless-stopped
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  celery:
+    build:
+      context: .
+      dockerfile: ./docker/celery/Dockerfile
+    command: celery -A modeling_system_backend worker --loglevel=info --logfile=media/logs/celery.log --concurrency=8
+    volumes:
+      - .:/code
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - C_FORCE_ROOT=true
+
+  flower:
+    image: mher/flower
+    ports:
+      - "5555:5555"
+    depends_on:
+      - celery
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+
 #  web:
-#    build: .
+#    build:
+#      context: .
+#      dockerfile: ./docker/web/Dockerfile
 #    env_file:
 #      - .env
 #    environment:

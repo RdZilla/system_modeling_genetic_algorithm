@@ -1,0 +1,5 @@
+.idea/
+.venv/
+nginx/
+postgresql/
+static/
