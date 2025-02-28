@@ -1,12 +1,12 @@
-FROM python:3.11
+FROM python:3.11-slim
 
 WORKDIR /alert_system
 
-COPY requirements.txt .
+COPY ../requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ../.. .
+COPY ../../.. .
 
 EXPOSE 8000
 

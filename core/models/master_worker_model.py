@@ -1,4 +1,4 @@
-import multiprocessing
+from billiard.pool import Pool
 import random
 
 from core.models.GA_base_model import GeneticAlgorithm
@@ -13,6 +13,11 @@ class MasterWorkerGA(GeneticAlgorithm):
         "crossover_rate",
         "fitness_function",
     ]
+
+    def __init__(self, population_size, mutation_rate, crossover_rate,
+                 population=None, fitness_function=None, logger=None):
+        self.population = population
+        super().__init__(population_size, mutation_rate, crossover_rate, fitness_function, logger)
 
     def initialize_population(self):
         """Генерация случайной популяции"""
@@ -38,11 +43,13 @@ class MasterWorkerGA(GeneticAlgorithm):
 
     def evaluate_fitness(self):
         """Распределенное вычисление приспособленности"""
-        with multiprocessing.Pool() as pool:
+        with Pool(processes=4) as pool:
             fitness_values = pool.map(self.evaluate_fitness_worker, self.population)
         return fitness_values
 
-    def run(self, generations):
+    def run(self, task_id, generations, task_config):
+        self.logger.logger_log.info(f"[Task id: {task_id}] || started with config: {task_config}")
+
         """Запуск алгоритма"""
         for gen in range(generations):  # TODO: add try-except block to set status ERROR
             fitness_values = self.evaluate_fitness()
@@ -60,5 +67,7 @@ class MasterWorkerGA(GeneticAlgorithm):
             best_fitness = max(fitness_values)
             avg_fitness = sum(fitness_values) / len(fitness_values)
 
-            self.logger.log(gen, best_fitness, avg_fitness)
+            self.logger.log(task_id, gen, best_fitness, avg_fitness)
+
+        self.finish(task_id)
         self.logger.logger_log.info("Algorithm finished successfully")

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from task_modeling.models import Task, Experiment, TaskConfig
@@ -37,3 +38,13 @@ class TaskConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskConfig
         fields = "__all__"
+
+
+def validate_file_extension(value):
+    if not value.name.endswith('.py'):
+        raise ValidationError("Только файлы с расширением .py разрешены.")
+    return value
+
+
+class MathFunctionsSerializer(serializers.Serializer):
+    function_file = serializers.FileField(validators=[validate_file_extension])

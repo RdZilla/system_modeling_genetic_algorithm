@@ -1,7 +1,7 @@
 import requests
 import json
 
-request_url_base = "http://localhost:8000/api/v1/tasks_module"
+request_url_base = "http://localhost:8000/api/v1/task_module"
 auth_credentials = ("admin", "admin")
 
 

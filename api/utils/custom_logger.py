@@ -11,7 +11,7 @@ TEXT_LOG_FILE_NAME = "text_log.log"
 JSON_LOG_FILE_NAME = "json_log.json"
 
 
-def get_user_folder_name(user_id):
+def get_user_folder_name(user_id) -> str:
     return f"user_id-{user_id}"
 
 
@@ -65,7 +65,7 @@ class ExperimentLogger:
         json_logger = os.path.join(results_folder, JSON_LOG_FILE_NAME)
         return json_logger
 
-    def log(self, generation, best_fitness, avg_fitness):
+    def log(self, task_id, generation, best_fitness, avg_fitness):
         """Логирование данных о поколении"""
         entry = {
             "generation": generation,
@@ -73,7 +73,7 @@ class ExperimentLogger:
             "avg_fitness": avg_fitness,
             "timestamp": datetime.datetime.now().isoformat()
         }
-        self.logger_log.info(f"Generation {generation}: Best fitness = {best_fitness}")
+        self.logger_log.info(f"[Task id: {task_id}] || Generation {generation}: Best fitness = {best_fitness}")
 
         self.logs.append(entry)
         with open(self.log_file_json, "w") as f:

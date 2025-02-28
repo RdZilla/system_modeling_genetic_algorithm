@@ -170,33 +170,30 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
                 "config", "experiment"
             ).filter(
                 experiment=experiment,
-                status=Task.Action.CREATED
+                # status=Task.Action.CREATED
             )
 
             if not tasks:
                 experiment_id = experiment.id
                 return not_found_response(f"task with {experiment_id = }")
 
-            experiment.status = Experiment.Action.STARTED
-            experiment.save()
+            # experiment.status = Experiment.Action.STARTED
+            # experiment.save()
 
             response_list = []
             error_list = []
 
             for task in tasks:
                 response = run_task(task)
-                if "error" in response:
-                    error_list.append({task.id: response})
+                if response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]:
+                    error_list.append({task.id: response.data})
                     continue
-                response_list.append(response)
+                response_list.append(response.data)
 
             if error_list:
                 experiment.status = Experiment.Action.ERROR
                 experiment.save()
                 return bad_request_response(error_list)
-
-            experiment.status = Experiment.Action.FINISHED
-            experiment.save()
             return success_response(response_list)
 
         return super().get(request, *args, **kwargs)
