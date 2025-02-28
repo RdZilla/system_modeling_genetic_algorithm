@@ -1,8 +1,6 @@
 import os
 import shutil
 
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -24,6 +22,9 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
 
     def get_queryset(self):
         user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
         queryset = Experiment.objects.select_related(
             "user"
         ).filter(
@@ -42,6 +43,9 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         }
     )
     def get(self, request, *args, **kwargs):
+        experiment_obj = self.get_queryset()
+        if isinstance(experiment_obj, Response):
+            return experiment_obj
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
@@ -52,7 +56,6 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                 name='Example of an experiment create request',
                 value={
                     "name": "Task name",
-                    "user": "user_id",
                     "configs": [
                         {
                             "name": "config_name",
@@ -81,14 +84,16 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
     )
     def post(self, request, *args, **kwargs):
         experiment_name = request.data.get("name", None)
-        experiment_user_id = request.data.get("user", None)
         configs = request.data.get("configs", [])
 
         validate_response = self.validate_experiment_data(experiment_name)
         if isinstance(validate_response, Response):
             return validate_response
 
-        user = get_object_or_404(User, id=experiment_user_id)
+        user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
 
         error_task_configs, existing_configs, created_configs = self.get_or_create_task_config(configs, user)
         if error_task_configs:
@@ -163,40 +168,43 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
         if isinstance(experiment, Response):
             return experiment
 
-        is_start = request.query_params.get("start", "False")
-        if is_start.lower() == "true":
-
-            tasks = Task.objects.select_related(
-                "config", "experiment"
-            ).filter(
-                experiment=experiment,
-                # status=Task.Action.CREATED
-            )
-
-            if not tasks:
-                experiment_id = experiment.id
-                return not_found_response(f"task with {experiment_id = }")
-
-            # experiment.status = Experiment.Action.STARTED
-            # experiment.save()
-
-            response_list = []
-            error_list = []
-
-            for task in tasks:
-                response = run_task(task)
-                if response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]:
-                    error_list.append({task.id: response.data})
-                    continue
-                response_list.append(response.data)
-
-            if error_list:
-                experiment.status = Experiment.Action.ERROR
-                experiment.save()
-                return bad_request_response(error_list)
-            return success_response(response_list)
+        is_start = request.query_params.get("start", "False").lower() == "true"
+        if is_start:
+            return self.start_experiment(experiment)
 
         return super().get(request, *args, **kwargs)
+
+    @staticmethod
+    def start_experiment(experiment):
+        tasks = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(
+            experiment=experiment,
+            # status=Task.Action.CREATED
+        )
+
+        if not tasks:
+            experiment_id = experiment.id
+            return not_found_response(f"task with {experiment_id = }")
+
+        # experiment.status = Experiment.Action.STARTED
+        # experiment.save()
+
+        response_list = []
+        error_list = []
+
+        for task in tasks:
+            response = run_task(task)
+            if response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]:
+                error_list.append({task.id: response.data})
+                continue
+            response_list.append(response.data)
+
+        if error_list:
+            experiment.status = Experiment.Action.ERROR
+            experiment.save()
+            return bad_request_response(error_list)
+        return success_response(response_list)
 
     @extend_schema(
         tags=['Experiments'],
@@ -228,12 +236,6 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
         }
     )
     def patch(self, request, *args, **kwargs):
-        # experiment = self.get_object()
-        # user = self.request.user
-        # configs = request.data.get("configs", {})
-        # if configs:
-        #     error_task_configs, existing_config, created_configs = self.get_or_create_task_config(configs, user)
-
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(

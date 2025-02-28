@@ -21,11 +21,19 @@ class TaskView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
+        user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
+
         experiment_id = self.kwargs.get("experiment_id")
 
         queryset = Task.objects.select_related(
             "config", "experiment"
-        ).filter(experiment_id=experiment_id)
+        ).filter(
+            experiment_id=experiment_id,
+            experiment__user=user
+        )
         return queryset
 
 
@@ -40,6 +48,9 @@ class TaskView(generics.ListCreateAPIView):
         }
     )
     def get(self, request, *args, **kwargs):
+        task_obj = self.get_queryset()
+        if isinstance(task_obj, Response):
+            return task_obj
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
@@ -61,7 +72,7 @@ class TaskView(generics.ListCreateAPIView):
             **SCHEMA_PERMISSION_DENIED
         }
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # TODO: доделать
         return super().post(request, *args, **kwargs)
 
 
@@ -69,6 +80,11 @@ class TaskManagementView(generics.RetrieveAPIView, generics.DestroyAPIView, Prep
     serializer_class = TaskSerializer
 
     def get_object(self):
+        user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
+
         experiment_id = self.kwargs.get("experiment_id")
 
         task_id = self.kwargs.get("task_id")
@@ -76,6 +92,7 @@ class TaskManagementView(generics.RetrieveAPIView, generics.DestroyAPIView, Prep
             "config", "experiment"
         ).filter(
             experiment_id=experiment_id,
+            experiment__user=user,
             id=task_id
         ).first()
         if not task_obj:
