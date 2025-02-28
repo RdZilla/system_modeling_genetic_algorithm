@@ -18,6 +18,9 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
 
     def get_queryset(self):
         user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
         queryset = TaskConfig.objects.select_related("user").filter(user=user)
         return queryset
 
@@ -32,6 +35,9 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         }
     )
     def get(self, request, *args, **kwargs):
+        task_config_obj = self.get_queryset()
+        if isinstance(task_config_obj, Response):
+            return task_config_obj
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
@@ -63,6 +69,9 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         # user_id = request.data.get("user", None)
         # user = get_object_or_404(User, id=user_id)
         user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
 
         configs = [{"name": config_name, "config": config}]
 
