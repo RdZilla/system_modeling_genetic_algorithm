@@ -35,7 +35,7 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         }
     )
     def get(self, request, *args, **kwargs):
-        task_config_obj = self.get_object()
+        task_config_obj = self.get_queryset()
         if isinstance(task_config_obj, Response):
             return task_config_obj
         return super().get(request, *args, **kwargs)
