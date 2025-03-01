@@ -6,7 +6,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from api.responses import bad_request_response, created_response, not_found_response, permission_denied_response, \
-    no_content_response, success_response
+    no_content_response, success_response, method_not_allowed_response
 from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, \
     SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, STATUS_204, STATUS_405
 from api.utils.custom_logger import get_user_folder_name
@@ -127,6 +127,10 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         if not experiment_name:
             error_text = "Название эксперимента должно быть заполнено"
             return bad_request_response(error_text)
+        exist_experiment = Experiment.objects.filter(name=experiment_name)
+        if exist_experiment:
+            return bad_request_response(f"Experiment with name={experiment_name} already exist")
+
 
 class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ExperimentSerializer
@@ -210,12 +214,18 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
         tags=['Experiments'],
         summary="Update experiment",
         description="METHOD NOT ALLOWED",
+        examples=[
+            OpenApiExample(
+                name='METHOD NOT ALLOWED',
+                value={"METHOD NOT ALLOWED"}
+            )
+        ],
         responses={
             **STATUS_405
         }
     )
     def put(self, request, *args, **kwargs):
-        return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return method_not_allowed_response()
 
     @extend_schema(
         tags=['Experiments'],
@@ -236,6 +246,29 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
         }
     )
     def patch(self, request, *args, **kwargs):
+        experiment_obj = self.get_object()
+        if isinstance(experiment_obj, Response):
+            return experiment_obj
+
+        new_experiment_name = request.data.get("name")
+        if not new_experiment_name:
+            return bad_request_response("New name must be filled in")
+        exist_name = Experiment.objects.filter(name=new_experiment_name)
+        if exist_name:
+            return bad_request_response(f"Experiment with name={new_experiment_name} already exist")
+
+        user = self.request.user
+        user_id = user.id
+        user_folder_name = get_user_folder_name(user_id)
+        experiment_name = experiment_obj.name
+
+        experiment_folder_old_name = os.path.join(RESULT_ROOT, user_folder_name, experiment_name)
+        experiment_folder_new_name = os.path.join(RESULT_ROOT, user_folder_name, new_experiment_name)
+        try:
+            os.rename(experiment_folder_old_name, experiment_folder_new_name)
+        except FileNotFoundError:
+            os.makedirs(experiment_folder_new_name, exist_ok=True)
+
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
@@ -255,7 +288,6 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
             return experiment
 
         experiment_id = experiment.id
-
 
         experiment_is_started = experiment.status == Experiment.Action.STARTED
         tasks_qs = Task.objects.select_related(

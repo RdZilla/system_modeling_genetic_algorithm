@@ -24,6 +24,11 @@ def permission_denied_response():
     error_status = status.HTTP_403_FORBIDDEN
     return Response(error_dict, status=error_status)
 
+# 405
+def method_not_allowed_response():
+    error_dict = {RESPONSE_KEY: "Method not allowed"}
+    error_status = status.HTTP_405_METHOD_NOT_ALLOWED
+    return Response(error_dict, status=error_status)
 
 # 409
 def conflict_response(obj_id):
