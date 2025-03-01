@@ -2,7 +2,7 @@ from django.urls import path
 
 from task_modeling.views.experiment_views.experiment_views import ExperimentView, ExperimentManagementView
 from task_modeling.views.task_config_views.task_config_views import TaskConfigView, TaskConfigManagementView
-from task_modeling.views.task_functions.task_functions_view import MathFunctionsView
+from task_modeling.views.math_functions.math_functions_view import MathFunctionsView
 from task_modeling.views.task_views.task_views import TaskView, TaskManagementView
 
 urlpatterns = [
