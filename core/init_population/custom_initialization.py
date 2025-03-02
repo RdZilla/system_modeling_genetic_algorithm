@@ -3,7 +3,7 @@ import numpy as np
 from core.init_population.random_initialization import random_initialization
 
 
-def custom_initialization(known_solutions, pop_size, chrom_length):
+def custom_initialization(pop_size, chrom_length, known_solutions):
     """Создает популяцию, включающую заранее известные хорошие решения.
 
     Args:

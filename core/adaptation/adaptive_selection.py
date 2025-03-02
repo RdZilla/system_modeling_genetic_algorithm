@@ -2,7 +2,7 @@ from core.selection.roulette_wheel_selection import roulette_wheel_selection
 from core.selection.tournament_selection import tournament_selection
 
 
-def adaptive_selection(population, fitness, generation, max_generations):
+def adaptive_selection(generation, max_generations, population, fitness):
     """Динамическая адаптация стратегии селекции по мере развития поколений."""
     if generation < max_generations / 2:
         # Турнирная селекция на ранних стадиях

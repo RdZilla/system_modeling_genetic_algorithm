@@ -6,6 +6,9 @@ from rest_framework.response import Response
 from api.responses import bad_request_response, success_response
 from api.utils.custom_logger import ExperimentLogger
 from api.utils.load_custom_funcs.UserFunctionMixin import UserFunctionMixin
+from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
+from core.models.asynchronous_model import AsynchronousGA
+from core.models.island_model import IslandGA
 from core.models.master_worker_model import MasterWorkerGA
 from task_modeling.models import Task
 
@@ -83,17 +86,10 @@ def run_task(task: Task) -> Response:
     if isinstance(fitness_function_name, Response):
         return fitness_function_name
 
-    match algorithm_type:
-        case "master_worker":
-            ga = MasterWorkerGA(
-                population_size=population_size,
-                mutation_rate=mutation_rate,
-                crossover_rate=crossover_rate,
-            )
-        case _:
-            task.status = Task.Action.ERROR
-            task.save()
-            return bad_request_response("Invalid algorithm type")
+    if algorithm_type not in SUPPORTED_MODELS_GA:
+        task.status = Task.Action.ERROR
+        task.save()
+        return bad_request_response("Invalid algorithm type")
 
     # try:
     #     ga.run(generations)
@@ -105,7 +101,7 @@ def run_task(task: Task) -> Response:
     task.status = Task.Action.STARTED
     task.save()
 
-    json_ga = ga.to_json()
+    # json_ga = ga.to_json()
 
     additional_params = {
         "algorithm_type": algorithm_type,

@@ -8,6 +8,7 @@ from api.responses import success_response, bad_request_response, not_found_resp
 from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, STATUS_204, \
     SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES
 from api.utils.load_custom_funcs.UserFunctionMixin import UserFunctionMixin
+from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
 from task_modeling.serializers import MathFunctionsSerializer
 
 
@@ -39,6 +40,7 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
          termination_functions) = functions_mapping
 
         response = {
+            "supported_models": SUPPORTED_MODELS_GA,
             "adaptation_functions": adaptation_functions.keys(),
             "crossover_functions": crossover_functions.keys(),
             "fitness_functions": fitness_functions.keys(),

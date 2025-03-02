@@ -3,52 +3,28 @@ from multiprocessing import cpu_count
 import numpy as np
 from billiard.pool import Pool
 
-from core.init_population.random_initialization import random_initialization
-from core.selection.tournament_selection import tournament_selection
-from task_modeling.models import Task, Experiment
+from task_modeling.models import Experiment, Task
 
 
 class MasterWorkerGA:
-    def __init__(self,
-                 population_size,
-                 max_generations,
-
-                 mutation_rate,
-                 crossover_rate,
-                 selection_rate,
-
-                 num_workers=None,
-
-                 adaptation_function=None,
-                 crossover_function=None,
-                 fitness_function=None,
-                 initialize_population_function=None,
-                 mutation_function=None,
-                 selection_function=None,
-                 termination_function=None,
-
-                 fitness_threshold=None,
-                 stagnation_threshold=None,
-                 stagnation_generations=5,
-                 logger=None):
+    def __init__(self, population_size, max_generations, fitness_function, crossover_function, mutation_function,
+                 mutation_rate=0.01, crossover_rate=0.7, selection_rate=0.5, num_workers=None,
+                 initialize_population_fn=None, termination_fn=None, adaptation_fn=None, selection_fn=None,
+                 fitness_threshold=None, stagnation_threshold=None, stagnation_generations=5, logger=None):
         """
         population_size: Размер популяции
         max_generations: Максимальное количество поколений
-
+        fitness_function: Функция фитнеса
+        crossover_function: Функция кроссовера
+        mutation_function: Функция мутации
         mutation_rate: Вероятность мутации
         crossover_rate: Вероятность кроссовера
         selection_rate: Вероятность селекции
-
         num_workers: Количество рабочих процессов для параллельных вычислений
-
-        adaptation_function: Функция адаптации параметров
-        crossover_function: Функция кроссовера
-        fitness_function: Функция фитнеса
-        initialize_population_function: Функция для инициализации популяции
-        mutation_function: Функция мутации
-        selection_function: Функция селекции
-        termination_function: Функция завершения алгоритма
-
+        initialize_population_fn: Функция для инициализации популяции
+        termination_fn: Функция завершения алгоритма
+        adaptation_fn: Функция адаптации параметров
+        selection_fn: Функция селекции
         fitness_threshold: Пороговое значение для фитнеса, при котором алгоритм завершится
         stagnation_threshold: Порог для изменения фитнеса
         stagnation_generations: Количество поколений без улучшений для прекращения работы
@@ -57,37 +33,44 @@ class MasterWorkerGA:
         # Параметры генетического алгоритма
         self.population_size = population_size
         self.max_generations = max_generations
-
+        self.fitness_function = fitness_function
+        self.crossover_function = crossover_function
+        self.mutation_function = mutation_function
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.selection_rate = selection_rate
-
         self.num_workers = num_workers or cpu_count()
 
         # Пользовательские функции
-        self.adaptation_fn = adaptation_function
-        self.crossover_function = crossover_function
-        self.fitness_function = fitness_function
-        self.initialize_population_fn = initialize_population_function or random_initialization
-        self.mutation_function = mutation_function
-        self.selection_fn = selection_function or tournament_selection
-        self.termination_fn = termination_function
+        self.initialize_population_fn = initialize_population_fn or self.default_initialize_population
+        self.termination_fn = termination_fn
+        self.adaptation_fn = adaptation_fn
+        self.selection_fn = selection_fn or self.default_selection_fn
 
         # Условия завершения
         self.fitness_threshold = fitness_threshold
         self.stagnation_threshold = stagnation_threshold
         self.stagnation_generations = stagnation_generations
 
+        # Инициализация популяции
+        self.population = self.initialize_population_fn()
+        self.previous_fitness = None
         self.logger = logger
 
-        self.population = None
-        self.previous_fitness = None
+    def default_initialize_population(self):
+        """Инициализирует популяцию случайными хромосомами (по умолчанию)."""
+        return np.random.rand(self.population_size, 10)
 
     def evaluate_fitness(self, population):
         """Оценка фитнеса для каждой хромосомы в популяции с использованием Celery."""
         with Pool(processes=self.num_workers) as pool:
             fitness_values = pool.map(self.fitness_function, population)
         return np.array(fitness_values)
+
+    def default_selection_fn(self, population):
+        """Стандартная функция селекции — турнирная."""
+        indices = np.random.choice(len(population), size=self.population_size, replace=True)
+        return population[indices]
 
     def check_termination_conditions(self, generation, fitness):
         """Проверка условий завершения алгоритма."""
@@ -158,7 +141,6 @@ class MasterWorkerGA:
         """Запуск параллельного генетического алгоритма по всем поколениям."""
 
         self.logger.logger_log.info(f"[Task id: {task_id}] || started with config: {task_config}")
-        self.population = self.initialize_population_fn(self.pop_size, self.chrom_length)
 
         for generation in range(self.max_generations):
             self.population, fitness, terminate = self.run_generation(generation)
