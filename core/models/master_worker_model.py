@@ -9,8 +9,29 @@ from task_modeling.models import Task, Experiment
 
 
 class MasterWorkerGA:
+    REQUIRED_PARAMS = [
+        "algorithm",
+        "population_size",
+        "chrom_length",
+        "max_generations",
+
+        "mutation_rate",
+        "crossover_rate",
+        "selection_rate",
+
+        "num_workers",
+
+        "crossover_function",
+        "fitness_function",
+        "initialize_population_function",
+        "mutation_function",
+        "selection_function",
+        "termination_function"
+    ]
+
     def __init__(self,
                  population_size,
+                 chrom_length,
                  max_generations,
 
                  mutation_rate,
@@ -56,6 +77,7 @@ class MasterWorkerGA:
         """
         # Параметры генетического алгоритма
         self.population_size = population_size
+        self.chrom_length = chrom_length
         self.max_generations = max_generations
 
         self.mutation_rate = mutation_rate
@@ -122,7 +144,7 @@ class MasterWorkerGA:
             return self.population, fitness, True
 
         # Селекция с использованием пользовательской функции
-        mating_pool = self.selection_fn(self.population)
+        mating_pool = np.array([self.selection_fn(self.population, fitness) for _ in range(len(self.population))])
 
         # Кроссовер и мутация
         offspring = self.crossover_and_mutate(mating_pool)
@@ -154,11 +176,11 @@ class MasterWorkerGA:
             offspring.extend([child1, child2])
         return np.array(offspring)
 
-    def run(self, task_id, generations, task_config):
+    def run(self, task_id, task_config):
         """Запуск параллельного генетического алгоритма по всем поколениям."""
 
         self.logger.logger_log.info(f"[Task id: {task_id}] || started with config: {task_config}")
-        self.population = self.initialize_population_fn(self.pop_size, self.chrom_length)
+        self.population = self.initialize_population_fn(self.population_size, self.chrom_length)
 
         for generation in range(self.max_generations):
             self.population, fitness, terminate = self.run_generation(generation)

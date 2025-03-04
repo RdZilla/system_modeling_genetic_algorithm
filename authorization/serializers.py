@@ -28,6 +28,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         data['email'] = self.user.email
+        data['first_name'] = self.user.first_name
+        data['last_name'] = self.user.last_name
+        data["avatar_url"] = "https://static.tildacdn.com/tild6161-3439-4135-b561-636566633936/ssfLXmNqOus0BCy_EWsd.jpg"
         return data
 
     def get_token(self, user):

@@ -66,8 +66,6 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
 
         config_name = request.data.get("name", None)
         config = request.data.get("config", {})
-        # user_id = request.data.get("user", None)
-        # user = get_object_or_404(User, id=user_id)
         user = self.request.user
         user_id = user.id
         if not user_id:

@@ -58,17 +58,41 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                     "name": "Task name",
                     "configs": [
                         {
-                            "name": "config_name",
+                            "name": "test_task_config",
                             "config": {
-                                "example_param_1": "example_value",
-                                "example_param_2": "example_value"
+                                "algorithm": "master_worker",
+                                "population_size": 200,
+                                "chrom_length": 10,
+                                "max_generations": 100,
+                                "mutation_rate": 0.05,
+                                "crossover_rate": 0.05,
+                                "selection_rate": 0.9,
+                                "num_workers": 3,
+                                "crossover_function": "single_point_crossover",
+                                "fitness_function": "rastrigin_fitness",
+                                "initialize_population_function": "random_initialization",
+                                "mutation_function": "bitwise_mutation",
+                                "selection_function": "tournament_selection",
+                                "termination_function": "generation_limit_termination"
                             }
                         },
                         {
-                            "name": "config_name",
+                            "name": "test_task_config",
                             "config": {
-                                "example_param_1": "example_value",
-                                "example_param_2": "example_value"
+                                "algorithm": "master_worker",
+                                "population_size": 200,
+                                "chrom_length": 10,
+                                "max_generations": 100,
+                                "mutation_rate": 0.05,
+                                "crossover_rate": 0.05,
+                                "selection_rate": 0.9,
+                                "num_workers": 3,
+                                "crossover_function": "single_point_crossover",
+                                "fitness_function": "rastrigin_fitness",
+                                "initialize_population_function": "random_initialization",
+                                "mutation_function": "bitwise_mutation",
+                                "selection_function": "tournament_selection",
+                                "termination_function": "generation_limit_termination"
                             }
                         },
                     ]
