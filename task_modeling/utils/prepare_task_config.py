@@ -18,12 +18,25 @@ class PrepareTaskConfigMixin:
         "num_workers",
 
         "adaptation_function",
+        "adaptation_kwargs",
+
         "crossover_function",
+        "crossover_kwargs",
+
         "fitness_function",
+        "fitness_kwargs",
+
         "initialize_population_function",
+        "initialize_population_kwargs",
+
         "mutation_function",
+        "mutation_kwargs",
+
         "selection_function",
+        "selection_kwargs",
+
         "termination_function",
+        "termination_kwargs",
 
         "fitness_threshold",
         "stagnation_threshold",

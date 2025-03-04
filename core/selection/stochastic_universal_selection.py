@@ -1,8 +1,12 @@
 import numpy as np
 
 
-def stochastic_universal_selection(population, fitness, num_selected):
+def stochastic_universal_selection(self):
     """Выполняет стохастическую универсальную селекцию."""
+    population = self.population
+    fitness = self.fitness
+    num_selected = self.fitness_kwargs.get("num_selected")
+
     fitness_sum = np.sum(fitness)
     selection_probs = fitness / fitness_sum
     start = np.random.uniform(0, 1 / num_selected)

@@ -1,7 +1,8 @@
 from multiprocessing import cpu_count
 
 import numpy as np
-from billiard.pool import Pool
+from multiprocessing import Pool
+# from billiard.pool import Pool
 
 from core.init_population.random_initialization import random_initialization
 from core.selection.tournament_selection import tournament_selection
@@ -41,12 +42,25 @@ class MasterWorkerGA:
                  num_workers=None,
 
                  adaptation_function=None,
+                 adaptation_kwargs=None,
+
                  crossover_function=None,
+                 crossover_kwargs=None,
+
                  fitness_function=None,
+                 fitness_kwargs=None,
+
                  initialize_population_function=None,
+                 initialize_population_kwargs=None,
+
                  mutation_function=None,
+                 mutation_kwargs=None,
+
                  selection_function=None,
+                 selection_kwargs=None,
+
                  termination_function=None,
+                 termination_kwargs=None,
 
                  fitness_threshold=None,
                  stagnation_threshold=None,
@@ -87,22 +101,40 @@ class MasterWorkerGA:
         self.num_workers = num_workers or cpu_count()
 
         # Пользовательские функции
-        self.adaptation_fn = adaptation_function
+        self.adaptation_function = adaptation_function
+        self.adaptation_kwargs = adaptation_kwargs
+
         self.crossover_function = crossover_function
+        self.crossover_kwargs = crossover_kwargs
+
         self.fitness_function = fitness_function
-        self.initialize_population_fn = initialize_population_function or random_initialization
+        self.fitness_kwargs = fitness_kwargs
+
+        self.initialize_population_function = initialize_population_function or random_initialization
+        self.initialize_population_kwargs = initialize_population_kwargs
+
         self.mutation_function = mutation_function
-        self.selection_fn = selection_function or tournament_selection
-        self.termination_fn = termination_function
+        self.mutation_kwargs = mutation_kwargs
+
+        self.selection_function = selection_function or tournament_selection
+        self.selection_kwargs = selection_kwargs
+
+        self.termination_function = termination_function
+        self.termination_kwargs = termination_kwargs
 
         # Условия завершения
-        self.fitness_threshold = fitness_threshold
-        self.stagnation_threshold = stagnation_threshold
-        self.stagnation_generations = stagnation_generations
+        self.fitness_threshold = fitness_threshold  # TODO убрать в termination_kwargs
+        self.stagnation_threshold = stagnation_threshold  # TODO убрать в termination_kwargs
+        self.stagnation_generations = stagnation_generations  # TODO убрать в termination_kwargs
 
         self.logger = logger
 
+        self.generation = None
         self.population = None
+        self.prev_population = None
+        self.fitness = None
+        self.mating_pool = None
+
         self.previous_fitness = None
 
     def evaluate_fitness(self, population):
@@ -111,62 +143,67 @@ class MasterWorkerGA:
             fitness_values = pool.map(self.fitness_function, population)
         return np.array(fitness_values)
 
-    def check_termination_conditions(self, generation, fitness):
+    def check_termination_conditions(self):
         """Проверка условий завершения алгоритма."""
-        if self.termination_fn:
-            if self.termination_fn(generation, fitness):
+        if self.termination_function:
+            if self.termination_function(self):
                 print("Пользовательская функция завершения остановила алгоритм.")
                 return True
-
-        if self.fitness_threshold is not None and np.max(fitness) >= self.fitness_threshold:
-            print(f"Порог фитнеса достигнут: {np.max(fitness)}")
+        fitness_threshold = self.termination_kwargs.get("fitness_threshold", None)
+        if fitness_threshold and np.max(self.fitness) >= fitness_threshold:
+            print(f"Порог фитнеса достигнут: {np.max(self.fitness)}")
             return True
 
-        if self.stagnation_threshold is not None and generation >= self.stagnation_generations:
+        stagnation_threshold = self.termination_kwargs.get("stagnation_threshold", None)
+        stagnation_generations = self.termination_kwargs.get("stagnation_generations")
+        if stagnation_threshold and stagnation_generations and self.generation >= stagnation_generations:
             if self.previous_fitness is not None:
-                if np.max(fitness) - np.max(self.previous_fitness) < self.stagnation_threshold:
-                    print(f"Стагнация: популяция не изменилась за последние {self.stagnation_generations} поколений.")
+                if np.max(self.fitness) - np.max(self.previous_fitness) < stagnation_threshold:
+                    print(f"Стагнация: популяция не изменилась за последние {stagnation_generations} поколений.")
                     return True
 
-        if generation >= self.max_generations:
+        if self.generation >= self.max_generations:
             print("Достигнут предел поколений.")
             return True
 
         return False
 
-    def run_generation(self, generation):
+    def run_generation(self):
         """Запуск одного поколения алгоритма."""
-        print(f"Generation {generation}")
+        print(f"Generation {self.generation}")
 
-        fitness = self.evaluate_fitness(self.population)
+        self.fitness = self.evaluate_fitness(self.population)
 
-        if self.check_termination_conditions(generation, fitness):
-            return self.population, fitness, True
+        if self.check_termination_conditions():
+            return self.population, self.fitness, True
 
         # Селекция с использованием пользовательской функции
-        mating_pool = np.array([self.selection_fn(self.population, fitness) for _ in range(len(self.population))])
-
+        mating_pool = np.array([self.selection_function(self) for _ in range(len(self.population))])
+        self.mating_pool = mating_pool
         # Кроссовер и мутация
-        offspring = self.crossover_and_mutate(mating_pool)
+        offspring = self.crossover_and_mutate()
 
         # Адаптация параметров, если задана
-        if self.adaptation_fn:
-            self.adaptation_fn(self)
+        if self.adaptation_function:
+            self.adaptation_function(self)
 
+        self.prev_population = self.population
         self.population = offspring
-        self.previous_fitness = fitness
+        self.previous_fitness = self.fitness
 
-        return self.population, fitness, False
+        return self.population, self.fitness, False
 
-    def crossover_and_mutate(self, mating_pool):
+    def crossover_and_mutate(self):
         """Проводит кроссовер и мутацию на основе вероятностей событий."""
         offspring = []
+        mating_pool = self.mating_pool
+
         for individual in mating_pool:
             if np.random.rand() < self.crossover_rate:
                 partner = mating_pool[np.random.randint(len(mating_pool))]
                 child1, child2 = self.crossover_function(individual, partner)
             else:
-                child1, child2 = individual.copy(), individual.copy()
+                child1, child2 = individual.copy(), individual.copy()  # TODO уточнить
 
             if np.random.rand() < self.mutation_rate:
                 child1 = self.mutation_function(child1)
@@ -180,10 +217,11 @@ class MasterWorkerGA:
         """Запуск параллельного генетического алгоритма по всем поколениям."""
 
         self.logger.logger_log.info(f"[Task id: {task_id}] || started with config: {task_config}")
-        self.population = self.initialize_population_fn(self.population_size, self.chrom_length)
+        self.population = self.initialize_population_function(self.population_size, self.chrom_length)
 
         for generation in range(self.max_generations):
-            self.population, fitness, terminate = self.run_generation(generation)
+            self.generation = generation
+            self.population, fitness, terminate = self.run_generation()
 
             best_fitness = max(fitness)
             avg_fitness = sum(fitness) / len(fitness)
