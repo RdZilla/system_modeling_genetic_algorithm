@@ -34,12 +34,13 @@ def wrapper_run_task(additional_params, ga_params, functions_routes, task_id):
     else:
         ga = MasterWorkerGA
 
-    ga = ga(**ga_params)
+    ga = ga(**ga_params,
+            logger=logger)
 
     for function_name, function_route in functions_routes.items():
         ga_function = get_function_from_string(function_route)
         setattr(ga, function_name, ga_function)
-    ga.logger = logger
+
     return ga.run(task_id, task_config)
 
 
@@ -117,19 +118,23 @@ def run_task(task: Task) -> Response:
 
     ga_params = {
         "population_size": task_config.get("population_size"),
-        "chrom_length": task_config.get("chrom_length"),
         "max_generations": task_config.get("max_generations"),
 
         "num_workers": task_config.get("num_workers"),
-
-        "fitness_threshold": task_config.get("fitness_threshold"),
-        "stagnation_threshold": task_config.get("stagnation_threshold"),
-        "stagnation_generations": task_config.get("stagnation_generations"),
 
         # Вероятности
         "mutation_rate": task_config.get("mutation_rate"),
         "crossover_rate": task_config.get("crossover_rate"),
         "selection_rate": task_config.get("selection_rate"),
+
+        # дополнительные параметры для функций
+        "adaptation_kwargs": task_config.get("adaptation_kwargs"),
+        "crossover_kwargs": task_config.get("crossover_kwargs"),
+        "fitness_kwargs": task_config.get("fitness_kwargs"),
+        "initialize_population_kwargs": task_config.get("initialize_population_kwargs"),
+        "mutation_kwargs": task_config.get("mutation_kwargs"),
+        "selection_kwargs": task_config.get("selection_kwargs"),
+        "termination_kwargs": task_config.get("termination_kwargs"),
     }
 
     # Названия вычислительных функций

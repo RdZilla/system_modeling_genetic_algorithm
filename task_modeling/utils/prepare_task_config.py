@@ -36,11 +36,7 @@ class PrepareTaskConfigMixin:
         "selection_kwargs",
 
         "termination_function",
-        "termination_kwargs",
-
-        "fitness_threshold",
-        "stagnation_threshold",
-        "stagnation_generations"
+        "termination_kwargs"
     ]
 
     @classmethod

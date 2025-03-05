@@ -5,7 +5,10 @@ def stochastic_universal_selection(self):
     """Выполняет стохастическую универсальную селекцию."""
     population = self.population
     fitness = self.fitness
-    num_selected = self.fitness_kwargs.get("num_selected")
+
+    num_selected = self.selection_kwargs.get("num_selected")
+
+    num_selected = int(num_selected) if num_selected else None
 
     fitness_sum = np.sum(fitness)
     selection_probs = fitness / fitness_sum

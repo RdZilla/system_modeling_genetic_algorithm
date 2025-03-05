@@ -8,8 +8,11 @@ def fitness_sharing_selection(self):
     population = self.population
     fitness = self.fitness
 
-    sigma_share = self.fitness_kwargs.get("sigma_share")
-    alpha = self.fitness_kwargs.get("alpha")
+    sigma_share = self.selection_kwargs.get("sigma_share")
+    alpha = self.selection_kwargs.get("alpha")
+
+    sigma_share = float(sigma_share) if sigma_share else None
+    alpha = float(alpha) if alpha else None
 
     shared_fitness = np.copy(fitness)
     for i in range(len(population)):

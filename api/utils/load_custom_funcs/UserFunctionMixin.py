@@ -1,6 +1,6 @@
 import os
 
-from requests import Response
+from rest_framework.response import Response
 
 from api.responses import permission_denied_response, bad_request_response, not_found_response
 from api.utils.custom_logger import get_user_folder_name
@@ -119,7 +119,7 @@ class UserFunctionMixin:
                 return_folder = user_crossover_folder
             case "fitness":
                 return_folder = user_fitness_folder
-            case "init_population":
+            case "initialize_population":
                 return_folder = user_init_population_folder
             case "mutation":
                 return_folder = user_mutation_folder

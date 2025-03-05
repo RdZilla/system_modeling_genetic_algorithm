@@ -29,7 +29,7 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
             "user"
         ).filter(
             user=user
-        )
+        ).order_by("-created_at")
         return queryset
 
     @extend_schema(
@@ -55,44 +55,59 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
             OpenApiExample(
                 name='Example of an experiment create request',
                 value={
-                    "name": "Task name",
+                    "name": "Experiment name",
                     "configs": [
                         {
                             "name": "test_task_config",
                             "config": {
                                 "algorithm": "master_worker",
                                 "population_size": 200,
-                                "chrom_length": 10,
                                 "max_generations": 100,
                                 "mutation_rate": 0.05,
                                 "crossover_rate": 0.05,
                                 "selection_rate": 0.9,
                                 "num_workers": 3,
                                 "crossover_function": "single_point_crossover",
+                                "crossover_kwargs": {},
                                 "fitness_function": "rastrigin_fitness",
+                                "fitness_kwargs": {},
                                 "initialize_population_function": "random_initialization",
+                                "initialize_population_kwargs": {
+                                    "chrom_length": 10,
+                                },
                                 "mutation_function": "bitwise_mutation",
+                                "mutation_kwargs": {},
                                 "selection_function": "tournament_selection",
-                                "termination_function": "generation_limit_termination"
+                                "selection_kwargs": {
+                                    "tournament_size": 3
+                                },
                             }
                         },
                         {
                             "name": "test_task_config",
                             "config": {
                                 "algorithm": "master_worker",
-                                "population_size": 200,
-                                "chrom_length": 10,
+                                "population_size": 100,
                                 "max_generations": 100,
                                 "mutation_rate": 0.05,
-                                "crossover_rate": 0.05,
+                                "crossover_rate": 0.75,
                                 "selection_rate": 0.9,
                                 "num_workers": 3,
                                 "crossover_function": "single_point_crossover",
+                                "crossover_kwargs": {},
                                 "fitness_function": "rastrigin_fitness",
+                                "fitness_kwargs": {},
                                 "initialize_population_function": "random_initialization",
+                                "initialize_population_kwargs": {
+                                    "chrom_length": 10,
+                                },
                                 "mutation_function": "bitwise_mutation",
+                                "mutation_kwargs": {},
                                 "selection_function": "tournament_selection",
-                                "termination_function": "generation_limit_termination"
+                                "selection_kwargs": {
+                                    "tournament_size": 3,
+                                    "min_max_rule": "min",
+                                },
                             }
                         },
                     ]
@@ -121,7 +136,8 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
 
         error_task_configs, existing_configs, created_configs = self.get_or_create_task_config(configs, user)
         if error_task_configs:
-            return bad_request_response(created_configs)
+            error_message = "Ошибки создания конфигурации"
+            return bad_request_response(error_message)
 
         experiment_obj = Experiment.objects.create(
             name=experiment_name,
@@ -258,7 +274,7 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
             OpenApiExample(
                 name='Example of an experiment partial update request',
                 value={
-                    "name": "Task name",
+                    "name": "Experiment name",
                 },
                 request_only=True
             ),

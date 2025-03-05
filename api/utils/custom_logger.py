@@ -65,15 +65,22 @@ class ExperimentLogger:
         json_logger = os.path.join(results_folder, JSON_LOG_FILE_NAME)
         return json_logger
 
-    def log(self, task_id, generation, best_fitness, avg_fitness):
+    def log(self, task_id, generation, min_fitness, min_fitness_individual,
+                        max_fitness, max_fitness_individual,
+                        avg_fitness):
         """Логирование данных о поколении"""
         entry = {
             "generation": generation,
-            "best_fitness": best_fitness,
+            "min_fitness": min_fitness,
+            "max_fitness": max_fitness,
             "avg_fitness": avg_fitness,
             "timestamp": datetime.datetime.now().isoformat()
         }
-        self.logger_log.info(f"[Task id: {task_id}] || Generation {generation}: Best fitness = {best_fitness}")
+        self.logger_log.info(f"[Task id: {task_id}] || Generation {generation}:")
+        self.logger_log.info(f"[Task id: {task_id}] || Min fitness = {min_fitness}, Individual = {min_fitness_individual}")
+        self.logger_log.info(f"[Task id: {task_id}] || Max fitness = {max_fitness}, Individual = {max_fitness_individual}")
+        self.logger_log.info(f"[Task id: {task_id}] || Average fitness = {avg_fitness}")
+        self.logger_log.debug("")
 
         self.logs.append(entry)
         with open(self.log_file_json, "w") as f:

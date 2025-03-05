@@ -1,14 +1,19 @@
 import numpy as np
 
 
-def random_initialization(pop_size, chrom_length):
+def random_initialization(self):
     """Создает популяцию с равномерным распределением значений.
 
     Args:
-        pop_size (int): Количество индивидов в популяции.
-        chrom_length (int): Длина хромосомы.
+       self
 
     Returns:
         np.ndarray: Массив популяции размером (pop_size, chrom_length).
     """
+    pop_size = self.population_size
+    chrom_length = self.initialize_population_kwargs.get("chrom_length")
+    chrom_length = int(chrom_length) if chrom_length else None
+    if chrom_length:
+        chrom_length = int(chrom_length)
+
     return np.random.randint(2, size=(pop_size, chrom_length))
