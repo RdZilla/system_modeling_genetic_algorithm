@@ -3,6 +3,12 @@ import os.path
 from api.utils.load_custom_funcs.load_custom_functions import get_functions_with_import_paths
 from modeling_system_backend.settings import BASE_DIR
 
+SUPPORTED_MODELS_GA = [
+    "master_worker",
+    "island_model",
+    "asynchronous_model"
+]
+
 route_to_core = os.path.join(BASE_DIR, "core")
 
 route_to_core_adaptation = os.path.join(route_to_core, "adaptation")

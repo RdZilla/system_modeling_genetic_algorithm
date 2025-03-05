@@ -8,6 +8,8 @@ from api.responses import success_response, bad_request_response, not_found_resp
 from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, STATUS_204, \
     SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES
 from api.utils.load_custom_funcs.UserFunctionMixin import UserFunctionMixin
+from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
+from api.utils.load_custom_funcs.load_custom_functions import extract_kwargs_params_from_module_path
 from task_modeling.serializers import MathFunctionsSerializer
 
 
@@ -30,23 +32,27 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
         functions_mapping = self.get_functions_mapping(user_id)
         if isinstance(functions_mapping, Response):
             return functions_mapping
-        (adaptation_functions,
-         crossover_functions,
-         fitness_functions,
-         init_population_functions,
-         mutation_functions,
-         selection_functions,
-         termination_functions) = functions_mapping
+
+        keys = [
+            "adaptation_functions",
+            "crossover_functions",
+            "fitness_functions",
+            "initialize_population_functions",
+            "mutation_functions",
+            "selection_functions",
+            "termination_functions"
+        ]
 
         response = {
-            "adaptation_functions": adaptation_functions.keys(),
-            "crossover_functions": crossover_functions.keys(),
-            "fitness_functions": fitness_functions.keys(),
-            "init_population_functions": init_population_functions.keys(),
-            "mutation_functions": mutation_functions.keys(),
-            "selection_functions": selection_functions.keys(),
-            "termination_functions": termination_functions.keys(),
+            "supported_models": SUPPORTED_MODELS_GA,
         }
+
+        for key, function_mapping in zip(keys, functions_mapping):
+            function_response = {}
+            for function_name, function_path in function_mapping.items():
+                function_kwargs = extract_kwargs_params_from_module_path(function_path)
+                function_response[function_name] = function_kwargs
+            response[key] = function_response
 
         return success_response(response)
 
@@ -69,7 +75,7 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
         parameters=[
             OpenApiParameter(
                 name="type_of_function", type=str, description='Выберите функцию файла',
-                required=True, enum=["adaptation", "crossover", "fitness", "init_population", "mutation",
+                required=True, enum=["adaptation", "crossover", "fitness", "initialize_population_functions", "mutation",
                                      "selection", "termination"]
             )
         ],
@@ -113,7 +119,7 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
         parameters=[
             OpenApiParameter(
                 name="type_of_function", type=str, description='Выберите функцию файла',
-                required=True, enum=["adaptation", "crossover", "fitness", "init_population", "mutation",
+                required=True, enum=["adaptation", "crossover", "fitness", "initialize_population_functions", "mutation",
                                      "selection", "termination"]
             ),
             OpenApiParameter(name="function_name", type=str, description='Название файла (example: file_name.py)',

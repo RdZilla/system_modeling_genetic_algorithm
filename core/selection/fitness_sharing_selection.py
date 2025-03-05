@@ -3,8 +3,17 @@ import numpy as np
 from core.selection.roulette_wheel_selection import roulette_wheel_selection
 
 
-def fitness_sharing_selection(population, fitness, sigma_share=0.5, alpha=1):
+def fitness_sharing_selection(self):
     """Учитывает разнообразие популяции через разделение фитнеса."""
+    population = self.population
+    fitness = self.fitness
+
+    sigma_share = self.selection_kwargs.get("sigma_share")
+    alpha = self.selection_kwargs.get("alpha")
+
+    sigma_share = float(sigma_share) if sigma_share else None
+    alpha = float(alpha) if alpha else None
+
     shared_fitness = np.copy(fitness)
     for i in range(len(population)):
         for j in range(len(population)):

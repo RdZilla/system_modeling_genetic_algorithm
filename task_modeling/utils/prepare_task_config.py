@@ -7,14 +7,36 @@ from task_modeling.models import TaskConfig
 class PrepareTaskConfigMixin:
     order_possible_params = [
         "algorithm",
-        "generations",
         "population_size",
-        "selection_function",
+        "chrom_length",
+        "max_generations",
+
         "mutation_rate",
-        "mutation_function",
         "crossover_rate",
+        "selection_rate",
+
+        "num_workers",
+
+        "adaptation_function",
+        "adaptation_kwargs",
+
         "crossover_function",
+        "crossover_kwargs",
+
         "fitness_function",
+        "fitness_kwargs",
+
+        "initialize_population_function",
+        "initialize_population_kwargs",
+
+        "mutation_function",
+        "mutation_kwargs",
+
+        "selection_function",
+        "selection_kwargs",
+
+        "termination_function",
+        "termination_kwargs"
     ]
 
     @classmethod
@@ -38,7 +60,7 @@ class PrepareTaskConfigMixin:
         algorithm_type = task_config.get("algorithm")
         match algorithm_type:
             case "master_worker":
-                required_params = MasterWorkerGA.required_params
+                required_params = MasterWorkerGA.REQUIRED_PARAMS
             case _:
                 return config
         for required_param in required_params:

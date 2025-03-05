@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def single_point_crossover(parent1, parent2):
+def single_point_crossover(self, parent1, parent2):
     """Выполняет одноточечный кроссовер между двумя родителями.
 
     Args:

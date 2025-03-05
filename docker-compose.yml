@@ -3,7 +3,6 @@ volumes:
 
 services:
   postgres:
-    container_name: postgres_alert_system
     image: postgres:15-alpine
     env_file:
       - .env
@@ -58,3 +57,14 @@ services:
 #      - '8000:8000'
 #    depends_on:
 #      - postgres
+
+#  frontend:
+#    build: ../frontend/.
+#    ports:
+#      - "5173:5173"
+#    volumes:
+#      - ../frontend:/app
+#      - /app/node_modules
+#    environment:
+#      - CHOKIDAR_USEPOLLING=true
+#      - VITE_API_URL=${VITE_API_URL}
