@@ -2,13 +2,14 @@ import time
 from multiprocessing import cpu_count
 
 import numpy as np
-from multiprocessing import Pool
-# from billiard.pool import Pool
+# from multiprocessing import Pool
+from billiard.pool import Pool
 
 from core.init_population.random_initialization import random_initialization
 from core.selection.tournament_selection import tournament_selection
 from modeling_system_backend.settings import DEBUG
 from task_modeling.models import Task, Experiment
+from task_modeling.utils.set_experiment_status import set_experiment_status
 
 
 class MasterWorkerGA:
@@ -270,24 +271,5 @@ class MasterWorkerGA:
         task_obj.status = status
         task_obj.save()
 
-        MasterWorkerGA.set_experiment_status(task_obj)
-
-    @staticmethod
-    def set_experiment_status(task_obj):
-        experiment_obj = task_obj.experiment
-
         experiment_status = Experiment.Action.FINISHED
-        related_tasks = Task.objects.filter(
-            experiment=experiment_obj,
-        )
-        stopped_related_tasks = related_tasks.filter(status=Task.Action.STOPPED)
-        running_related_tasks = related_tasks.filter(status=Task.Action.STARTED)
-        error_related_tasks = related_tasks.filter(status=Task.Action.ERROR)
-        if stopped_related_tasks:
-            experiment_status = Experiment.Action.STOPPED
-        if running_related_tasks:
-            experiment_status = Experiment.Action.STARTED
-        if error_related_tasks:
-            experiment_status = Experiment.Action.ERROR
-        experiment_obj.status = experiment_status
-        experiment_obj.save()
+        set_experiment_status(task_obj, experiment_status)

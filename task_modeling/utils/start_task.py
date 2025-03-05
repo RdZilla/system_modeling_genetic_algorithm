@@ -10,8 +10,9 @@ from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
 from core.models.asynchronous_model import AsynchronousGA
 from core.models.island_model import IslandGA
 from core.models.master_worker_model import MasterWorkerGA
-from task_modeling.models import Task
+from task_modeling.models import Task, Experiment
 from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
+from task_modeling.utils.set_experiment_status import set_experiment_status
 
 
 def get_function_from_string(path: str):
@@ -163,7 +164,9 @@ def run_task(task: Task) -> Response:
 
     task.status = Task.Action.STARTED
     task.save()
+    experiment_status = Experiment.Action.STARTED
+    set_experiment_status(task, experiment_status)
 
-    wrapper_run_task(additional_params, ga_params, functions_routes, task_id)
-    # wrapper_run_task.delay(additional_params, ga_params, functions_routes, task_id)
+    # wrapper_run_task(additional_params, ga_params, functions_routes, task_id)
+    wrapper_run_task.delay(additional_params, ga_params, functions_routes, task_id)
     return success_response(f"Task {task.id} started successfully")
