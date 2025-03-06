@@ -44,7 +44,7 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
         ]
 
         response = {
-            "supported_models": SUPPORTED_MODELS_GA,
+            "supported_models": SUPPORTED_MODELS_GA.keys(),
         }
 
         for key, function_mapping in zip(keys, functions_mapping):

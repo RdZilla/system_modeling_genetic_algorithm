@@ -5,7 +5,8 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParamete
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from api.responses import not_found_response, permission_denied_response, bad_request_response, no_content_response
+from api.responses import not_found_response, permission_denied_response, bad_request_response, no_content_response, \
+    success_response
 from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, \
     SCHEMA_PERMISSION_DENIED, STATUS_204
 from api.utils.custom_logger import get_user_folder_name, get_task_folder_name
@@ -127,19 +128,23 @@ class TaskManagementView(generics.RetrieveAPIView, generics.DestroyAPIView, Prep
         if isinstance(task, Response):
             return task
 
-        # validate_data = self.validate_data(task)
-        # TODO add error response if validate is not successful
-        # TODO create periodic task and 200 response
-
         is_start = request.query_params.get("start", "False")
         if is_start.lower() == "true":
-            response = run_task(task)
-
-            response_status = status.HTTP_200_OK
-            if "error" in response:
-                response_status = status.HTTP_400_BAD_REQUEST
-            return Response(response, status=response_status)
+            return self.start_task(task)
         return super().get(request, *args, **kwargs)
+
+    @staticmethod
+    def start_task(task: Task):
+        # task_status = task.status
+        # if task_status == Task.Action.STARTED:
+        #     return bad_request_response("Задача уже запушена")
+        # if task_status == Task.Action.FINISHED:
+        #     return bad_request_response("Задача уже завершена. Перезапись резульатов запрещена")
+
+        response = run_task(task)
+        if status.is_client_error(response.status_code):
+            return response
+        return success_response(task.id)
 
     @extend_schema(
         tags=['Tasks'],

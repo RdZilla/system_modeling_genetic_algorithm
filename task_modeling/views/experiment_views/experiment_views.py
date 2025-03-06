@@ -58,40 +58,13 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                     "name": "Experiment name",
                     "configs": [
                         {
-                            "name": "test_task_config",
-                            "config": {
-                                "algorithm": "master_worker",
-                                "population_size": 200,
-                                "max_generations": 100,
-                                "mutation_rate": 0.05,
-                                "crossover_rate": 0.05,
-                                "selection_rate": 0.9,
-                                "num_workers": 3,
-                                "crossover_function": "single_point_crossover",
-                                "crossover_kwargs": {},
-                                "fitness_function": "rastrigin_fitness",
-                                "fitness_kwargs": {},
-                                "initialize_population_function": "random_initialization",
-                                "initialize_population_kwargs": {
-                                    "chrom_length": 10,
-                                },
-                                "mutation_function": "bitwise_mutation",
-                                "mutation_kwargs": {},
-                                "selection_function": "tournament_selection",
-                                "selection_kwargs": {
-                                    "tournament_size": 3
-                                },
-                            }
-                        },
-                        {
-                            "name": "test_task_config",
+                            "name": "master_worker_config_1",
                             "config": {
                                 "algorithm": "master_worker",
                                 "population_size": 100,
-                                "max_generations": 100,
+                                "max_generations": 50,
                                 "mutation_rate": 0.05,
                                 "crossover_rate": 0.75,
-                                "selection_rate": 0.9,
                                 "num_workers": 3,
                                 "crossover_function": "single_point_crossover",
                                 "crossover_kwargs": {},
@@ -108,6 +81,35 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                                     "tournament_size": 3,
                                     "min_max_rule": "min",
                                 },
+                            }
+                        },
+                        {
+                            "name": "island_model_config_1",
+                            "config": {
+                                "algorithm": "island_model",
+                                "population_size": 100,
+                                "max_generations": 50,
+                                "mutation_rate": 0.05,
+                                "crossover_rate": 0.75,
+                                "num_workers": 3,
+                                "crossover_function": "single_point_crossover",
+                                "crossover_kwargs": {},
+                                "fitness_function": "rastrigin_fitness",
+                                "fitness_kwargs": {},
+                                "initialize_population_function": "random_initialization",
+                                "initialize_population_kwargs": {
+                                    "chrom_length": 10,
+                                },
+                                "mutation_function": "bitwise_mutation",
+                                "mutation_kwargs": {},
+                                "selection_function": "tournament_selection",
+                                "selection_kwargs": {
+                                    "tournament_size": 3,
+                                    "min_max_rule": "min",
+                                },
+                                "num_islands": 3,
+                                "migration_interval": 5,
+                                "migration_rate": 0.5
                             }
                         },
                     ]
@@ -239,7 +241,7 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
 
         for task in tasks:
             response = run_task(task)
-            if response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]:
+            if status.is_client_error(response.status_code):
                 error_list.append({task.id: response.data})
                 continue
             response_list.append(response.data)

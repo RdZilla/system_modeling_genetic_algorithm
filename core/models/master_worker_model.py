@@ -1,34 +1,16 @@
 import time
-from multiprocessing import cpu_count
 
 import numpy as np
 # from multiprocessing import Pool
 from billiard.pool import Pool
 
-from core.init_population.random_initialization import random_initialization
-from core.selection.tournament_selection import tournament_selection
-from modeling_system_backend.settings import DEBUG
-from task_modeling.models import Task, Experiment
-from task_modeling.utils.set_experiment_status import set_experiment_status
+from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 
 
-class MasterWorkerGA:
+
+class MasterWorkerGA(GeneticAlgorithmMixin):
     REQUIRED_PARAMS = [
-        "algorithm",
-        "population_size",
-        "max_generations",
-
-        "mutation_rate",
-        "crossover_rate",
-        "selection_rate",
-
-        "num_workers",
-
-        "crossover_function",
-        "fitness_function",
-        "initialize_population_function",
-        "mutation_function",
-        "selection_function",
+        *GeneticAlgorithmMixin.REQUIRED_PARAMS
     ]
 
     def __init__(self,
@@ -37,7 +19,6 @@ class MasterWorkerGA:
 
                  mutation_rate,
                  crossover_rate,
-                 selection_rate,
 
                  num_workers=None,
 
@@ -62,68 +43,34 @@ class MasterWorkerGA:
                  termination_function=None,
                  termination_kwargs=None,
                  logger=None):
-        """
-        population_size: Размер популяции
-        max_generations: Максимальное количество поколений
 
-        mutation_rate: Вероятность мутации
-        crossover_rate: Вероятность кроссовера
-        selection_rate: Вероятность селекции
-
-        num_workers: Количество рабочих процессов для параллельных вычислений
-
-        adaptation_function: Функция адаптации параметров
-        crossover_function: Функция кроссовера
-        fitness_function: Функция фитнеса
-        initialize_population_function: Функция для инициализации популяции
-        mutation_function: Функция мутации
-        selection_function: Функция селекции
-        termination_function: Функция завершения алгоритма
-
-        fitness_threshold: Пороговое значение для фитнеса, при котором алгоритм завершится
-        stagnation_threshold: Порог для изменения фитнеса
-        stagnation_generations: Количество поколений без улучшений для прекращения работы
-        logger: Объект ExperimentLogger для логирования процесса
-        """
-        # Параметры генетического алгоритма
-        self.population_size = population_size
-        self.max_generations = max_generations
-
-        self.mutation_rate = mutation_rate
-        self.crossover_rate = crossover_rate
-        self.selection_rate = selection_rate
-
-        self.num_workers = num_workers or cpu_count()
-
-        # Пользовательские функции
-        self.adaptation_function = adaptation_function
-        self.adaptation_kwargs = adaptation_kwargs
-
-        self.crossover_function = crossover_function
-        self.crossover_kwargs = crossover_kwargs
-
-        self.fitness_function = fitness_function
-        self.fitness_kwargs = fitness_kwargs
-
-        self.initialize_population_function = initialize_population_function or random_initialization
-        self.initialize_population_kwargs = initialize_population_kwargs
-
-        self.mutation_function = mutation_function
-        self.mutation_kwargs = mutation_kwargs
-
-        self.selection_function = selection_function or tournament_selection
-        self.selection_kwargs = selection_kwargs
-
-        self.termination_function = termination_function
-        self.termination_kwargs = termination_kwargs
-
-        self.logger = logger
+        super().__init__(population_size,
+                         max_generations,
+                         mutation_rate,
+                         crossover_rate,
+                         num_workers,
+                         adaptation_function,
+                         adaptation_kwargs,
+                         crossover_function,
+                         crossover_kwargs,
+                         fitness_function,
+                         fitness_kwargs,
+                         initialize_population_function,
+                         initialize_population_kwargs,
+                         mutation_function,
+                         mutation_kwargs,
+                         selection_function,
+                         selection_kwargs,
+                         termination_function,
+                         termination_kwargs,
+                         logger)
 
         self.generation = None
-        self.population = None
-        self.prev_population = None
-        self.fitness = None
 
+        self.population = None
+        self.previous_population = None
+
+        self.fitness = None
         self.previous_fitness = None
 
     def evaluate_fitness(self, population):
@@ -136,43 +83,29 @@ class MasterWorkerGA:
         """Проверка условий завершения алгоритма."""
         if self.termination_function:
             if self.termination_function(self):
-                self.logger.logger_log.info("Пользовательская функция завершения остановила алгоритм")
+                self.logger.logger_log.info(f"[Task id: {self.task_id}] || A termination function stopped the algorithm")
                 return True
-        # fitness_threshold = self.termination_kwargs.get("fitness_threshold", None)
-        # if fitness_threshold and np.max(self.fitness) >= fitness_threshold:
-        #     print(f"Порог фитнеса достигнут: {np.max(self.fitness)}")
-        #     return True
-        #
-        # stagnation_threshold = self.termination_kwargs.get("stagnation_threshold", None)
-        # stagnation_generations = self.termination_kwargs.get("stagnation_generations")
-        # if stagnation_threshold and stagnation_generations and self.generation >= stagnation_generations:
-        #     if self.previous_fitness is not None:
-        #         if np.max(self.fitness) - np.max(self.previous_fitness) < stagnation_threshold:
-        #             print(f"Стагнация: популяция не изменилась за последние {stagnation_generations} поколений.")
-        #             return True
 
         if self.generation >= self.max_generations:
-            self.logger.logger_log.info("Достигнут предел поколений")
+            self.logger.logger_log.info(f"[Task id: {self.task_id}] || The generational limit has been reached")
             return True
 
         return False
 
-    def run_generation(self, task_id):
+    def run_generation(self):
         """Запуск одного поколения алгоритма."""
         self.fitness = self.evaluate_fitness(self.population)
-        self.log_process(task_id)
+        self.log_process(self.task_id, self.generation, self.population, self.fitness)
         if self.check_termination_conditions():
             return True
 
-        self.prev_population = self.population
+        self.previous_population = self.population
         self.previous_fitness = self.fitness
 
-        # Кроссовер и мутация
         offspring = self.crossover_and_mutate()
 
         self.population = offspring
 
-        # Адаптация параметров, если задана
         if self.adaptation_function:  # TODO Все функции адаптации требуют доработки
             self.adaptation_function(self)
         return False
@@ -198,78 +131,13 @@ class MasterWorkerGA:
             offspring.extend([child1, child2])
         return np.array(offspring)
 
-    def run(self, task_id, task_config):
-        """Запуск параллельного генетического алгоритма по всем поколениям."""
+    def start_calc(self):
+        self.population = self.initialize_population_function(self)
+        if self.termination_kwargs:
+            self.termination_kwargs["start_time"] = time.time()
 
-        status = Task.Action.FINISHED
-
-        self.logger.logger_log.info(f"[Task id: {task_id}] || started with config: {task_config}")
-        self.logger.logger_log.debug("")
-        if not DEBUG:
-            try:
-                self.population = self.initialize_population_function(self)
-                if self.termination_kwargs:
-                    self.termination_kwargs["start_time"] = time.time()
-
-                for generation in range(self.max_generations):
-                    self.generation = generation
-                    terminate = self.run_generation(task_id)
-
-                    if terminate:
-                        break
-            except Exception as error:
-                self.logger.logger_log.info(f"[Task id: {task_id}] || Algorithm has {error = }")
-                status = Task.Action.ERROR
-        else:
-            self.population = self.initialize_population_function(self)
-            if self.termination_kwargs:
-                self.termination_kwargs["start_time"] = time.time()
-
-            for generation in range(self.max_generations):
-                self.generation = generation
-                terminate = self.run_generation(task_id)
-
-                if terminate:
-                    break
-
-        self.logger.logger_log.info(f"[Task id: {task_id}] || finished with status {status}")
-        self.finish(task_id, status)
-
-    def log_process(self, task_id):
-        min_fitness, min_fitness_individual, max_fitness, max_fitness_individual = self.get_min_max_fitness_individual()
-
-        avg_fitness = self.get_average_fitness()
-
-        self.logger.log(task_id, self.generation,
-                        min_fitness, min_fitness_individual,
-                        max_fitness, max_fitness_individual,
-                        avg_fitness)  # вывести значения лучшего поколения для мин и для макс
-
-    def get_min_max_fitness_individual(self):
-        """Возвращает особи с минимальным и максимальным значением фитнес-функции."""
-
-        # Находим индекс особи с минимальным фитнесом
-        min_index = np.argmin(self.fitness)
-        min_fitness_value = self.fitness[min_index]
-        min_fitness_individual = self.population[min_index]
-
-        max_index = np.argmax(self.fitness)
-        max_fitness_value = self.fitness[max_index]
-        max_fitness_individual = self.population[max_index]
-
-        return min_fitness_value, min_fitness_individual, max_fitness_value, max_fitness_individual
-
-    def get_average_fitness(self):
-        """Возвращает среднее значение фитнеса для всей популяции."""
-        average_fitness = np.mean(self.fitness)
-        return average_fitness
-
-    @staticmethod
-    def finish(task_id, status):
-        """Завершение алгоритма"""
-        task_obj = Task.objects.get(id=task_id)
-        task_obj.status = status
-        task_obj.save()
-
-        experiment_status = Experiment.Action.FINISHED
-        set_experiment_status(task_obj, experiment_status)
+        for generation in range(1, self.max_generations + 1):
+            self.generation = generation
+            terminate_flag = self.run_generation()
+            if terminate_flag:
+                break

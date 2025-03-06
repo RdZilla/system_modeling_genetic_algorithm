@@ -163,10 +163,10 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
 
         user = self.request.user
         config = request.data.get("config", {})
-        error_config = PrepareTaskConfigMixin.validate_task_config(config, task_name, config,
+        validate_result = PrepareTaskConfigMixin.validate_task_config(task_name, config,
                                                                    partial_check=False)
-        if error_config or error_config == {}:
-            return bad_request_response("Ошибка валидации конфигурации")
+        if validate_result:
+            return bad_request_response(f"Ошибка валидации конфигурации: {validate_result}")
 
         config = PrepareTaskConfigMixin.order_params_task_config(config)
         task_config_obj = TaskConfig.objects.filter(config=config, user=user).first()
@@ -223,10 +223,10 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
         config = request.data.get("config", {})
         if config:
-            error_config = PrepareTaskConfigMixin.validate_task_config(config, None, config,
+            error_config = PrepareTaskConfigMixin.validate_task_config(None, config,
                                                                        partial_check=True)
-            if error_config or error_config == {}:
-                return bad_request_response("Ошибка валидации конфигурации")
+            if error_config:
+                return bad_request_response(f"Ошибка валидации конфигурации: {error_config}")
 
             config = PrepareTaskConfigMixin.order_params_task_config(config)
             task_config_obj = TaskConfig.objects.filter(config=config, user=user).first()
