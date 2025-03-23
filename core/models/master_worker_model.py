@@ -138,6 +138,8 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
 
         for generation in range(1, self.max_generations + 1):
             self.generation = generation
+            process = self.logger.get_process_id()
+            self.logger.merge_logs(process + 1)
             terminate_flag = self.run_generation()
             if terminate_flag:
                 break

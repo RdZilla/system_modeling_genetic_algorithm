@@ -91,6 +91,7 @@ class IslandGA(GeneticAlgorithmMixin):
 
         # Количество мигрирующих особей
         num_migrants = max(1, int(population_size * self.migration_rate))
+        self.logger.logger_log.info(f"[{self.task_id}] || {num_migrants = }")
 
         for num_island in range(num_islands):
             next_island = (num_island + 1) % num_islands  # Определяем соседний остров
@@ -98,13 +99,16 @@ class IslandGA(GeneticAlgorithmMixin):
 
             # Случайно выбираем индивидов для миграции
             migrant_indices = random.sample(range(population_size), num_migrants)
+            self.logger.logger_log.info(f"[{self.task_id}/{num_island}] || Choose {migrant_indices = }")
+
             migrants = population[migrant_indices]
 
             # Добавляем мигрантов в популяцию соседнего острова
             self.islands[next_island].population = np.vstack((self.islands[next_island].population, migrants))
 
             # Удаляем мигрантов из текущего острова
-            self.islands[num_island].population = np.delete(population, migrant_indices, axis=0)
+            self.islands[num_island].population = np.delete(self.islands[num_island].population, migrant_indices, axis=0)
+            self.logger.logger_log.info(f"[{self.task_id}/{num_island}] || Deleted {migrant_indices = }")
 
     def start_calc(self):
         self.init_islands()

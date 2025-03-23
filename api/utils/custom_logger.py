@@ -140,5 +140,9 @@ class ExperimentLogger:
         else:
             self.logs = {}
 
+
+    def get_process_id(self):
+        return self._process_id
+
     def set_process_id(self, process_id):
         self._process_id = process_id
