@@ -5,9 +5,6 @@ import numpy as np
 
 # from multiprocessing import Pool
 from billiard.pool import Pool
-# from billiard.managers import BaseManager as Manager
-from billiard import Manager
-
 
 from api.utils.custom_logger import ExperimentLogger
 from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
@@ -120,6 +117,8 @@ class IslandGA(GeneticAlgorithmMixin):
 
             with Pool(self.num_workers) as pool:
                 terminate_flags = pool.starmap(MasterWorkerGA.run_generation, [(island,) for island in self.islands])
+            self.logger.merge_logs(self.num_islands)
+
             if True in terminate_flags:
                 island_num = terminate_flags.index(True)
                 break
@@ -132,15 +131,11 @@ class IslandGA(GeneticAlgorithmMixin):
     def init_islands(self):
         self.islands = []
         for num_island in range(self.num_islands):
-            manager = Manager()
-            lock = manager.Lock()
-
             experiment_name = self.logger.experiment_name
             user_id = self.logger.user_id
             task_id = self.logger.task_id
             logger = ExperimentLogger(experiment_name, user_id, task_id)
             logger.set_process_id(num_island)
-            logger.set_lock(lock)
 
             island = MasterWorkerGA(
                 self.population_size,

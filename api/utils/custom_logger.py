@@ -61,7 +61,6 @@ class ExperimentLogger:
 
         self.logs = {}
 
-        self._lock = None
         self._process_id = None
 
     @staticmethod
@@ -72,15 +71,22 @@ class ExperimentLogger:
         json_logger = os.path.join(results_folder, JSON_LOG_FILE_NAME)
         if os.path.exists(json_logger):
             os.remove(json_logger)
+        files_in_folder = os.listdir(results_folder)
+        for file in files_in_folder:
+            if file.endswith(".tmp"):
+                os.remove(os.path.join(results_folder, file))
         return json_logger
 
     def log(self, task_id, generation, min_fitness, min_fitness_individual,
-                        max_fitness, max_fitness_individual,
-                        avg_fitness):
+            max_fitness, max_fitness_individual,
+            avg_fitness):
         """Логирование данных о поколении"""
+
         self.logger_log.info(f"[{task_id}/{self._process_id}] || Generation {generation}:")
-        self.logger_log.info(f"[{task_id}/{self._process_id}] || Min fitness = {min_fitness}, Individual = {min_fitness_individual}")
-        self.logger_log.info(f"[{task_id}/{self._process_id}] || Max fitness = {max_fitness}, Individual = {max_fitness_individual}")
+        self.logger_log.info(
+            f"[{task_id}/{self._process_id}] || Min fitness = {min_fitness}, Individual = {min_fitness_individual}")
+        self.logger_log.info(
+            f"[{task_id}/{self._process_id}] || Max fitness = {max_fitness}, Individual = {max_fitness_individual}")
         self.logger_log.info(f"[{task_id}/{self._process_id}] || Average fitness = {avg_fitness}")
         self.logger_log.debug("")
 
@@ -94,19 +100,37 @@ class ExperimentLogger:
 
         process_key = f"process_{self._process_id}"
 
-        with self._lock:
-            if os.path.exists(self.log_file_json) and os.path.getsize(self.log_file_json) > 0:
-                with open(self.log_file_json, "r") as json_file:
-                    self.logs = json.load(json_file)
+        temp_path_file = f"{self.log_file_json}_{process_key}.tmp"
+        if os.path.exists(temp_path_file) and os.path.getsize(temp_path_file) > 0:
+            with open(temp_path_file, "r") as json_file:
+                self.logs = json.load(json_file)
+        else:
+            self.logs = {}
+
+        if process_key not in self.logs:
+            self.logs[process_key] = []
+        self.logs[process_key].append(entry)
+
+        with open(temp_path_file, "w") as json_file:
+            json.dump(self.logs, json_file, indent=4)
+
+    def merge_logs(self, process_count):
+        full_log = {}
+
+        for process_key in range(process_count):
+            process_key_name = f"process_{process_key}"
+            temp_path_file = f"{self.log_file_json}_{process_key_name}.tmp"
+            if os.path.exists(temp_path_file) and os.path.getsize(temp_path_file) > 0:
+                with open(temp_path_file, "r") as json_file:
+                    process_log = json.load(json_file)
             else:
-                self.logs = {}
+                process_log = {}
 
-            if process_key not in self.logs:
-                self.logs[process_key] = []
-            self.logs[process_key].append(entry)
+            process_log_data = process_log.get(process_key_name, [])
+            full_log[process_key_name] = process_log_data
 
-            with open(self.log_file_json, "w") as json_file:
-                json.dump(self.logs, json_file, indent=4)
+        with open(self.log_file_json, "w") as json_file:
+            json.dump(full_log, json_file, indent=4)
 
     def get_logs(self):
         """Получение всех логов"""
@@ -118,6 +142,3 @@ class ExperimentLogger:
 
     def set_process_id(self, process_id):
         self._process_id = process_id
-
-    def set_lock(self, lock):
-        self._lock = lock

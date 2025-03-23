@@ -2,7 +2,6 @@ import importlib
 
 from celery import shared_task
 from rest_framework.response import Response
-from billiard import Manager
 
 from api.responses import bad_request_response, success_response
 from api.utils.custom_logger import ExperimentLogger
@@ -30,10 +29,6 @@ def wrapper_run_task(additional_params, ga_params, functions_routes, task_id):
 
     logger = ExperimentLogger(experiment_name, user_id, task_id)
     logger.set_process_id(0)
-
-    manager = Manager()
-    lock = manager.Lock()
-    logger.set_lock(lock)
 
     ga = SUPPORTED_MODELS_GA[algorithm_type]
 
