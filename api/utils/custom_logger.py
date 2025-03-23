@@ -15,11 +15,11 @@ def get_user_folder_name(user_id) -> str:
     return f"user_id-{user_id}"
 
 
-def get_task_folder_name(task_id):
+def get_task_folder_name(task_id) -> str:
     return f"task_id-{task_id}"
 
 
-def get_logger(experiment_name, user_id, task_id):
+def get_logger(experiment_name: str, user_id, task_id):
     """Создаёт и возвращает логгер с динамическим именем файла"""
 
     # Динамическое имя файла с датой и именем задачи
@@ -50,12 +50,19 @@ class ExperimentLogger:
     """Логирование работы ГА"""
 
     def __init__(self, experiment_name, user_id, task_id):
+        self.experiment_name = experiment_name
+        self.user_id = user_id
+        self.task_id = task_id
+
         logger = get_logger(experiment_name, user_id, task_id)
 
         self.logger_log = logger
         self.log_file_json = self.get_json_log_path(logger)
 
-        self.logs = []
+        self.logs = {}
+
+        self._lock = None
+        self._process_id = None
 
     @staticmethod
     def get_json_log_path(logger):
@@ -63,12 +70,20 @@ class ExperimentLogger:
         results_folder, _ = os.path.split(logger_filepath)
 
         json_logger = os.path.join(results_folder, JSON_LOG_FILE_NAME)
+        if os.path.exists(json_logger):
+            os.remove(json_logger)
         return json_logger
 
     def log(self, task_id, generation, min_fitness, min_fitness_individual,
                         max_fitness, max_fitness_individual,
                         avg_fitness):
         """Логирование данных о поколении"""
+        self.logger_log.info(f"[{task_id}/{self._process_id}] || Generation {generation}:")
+        self.logger_log.info(f"[{task_id}/{self._process_id}] || Min fitness = {min_fitness}, Individual = {min_fitness_individual}")
+        self.logger_log.info(f"[{task_id}/{self._process_id}] || Max fitness = {max_fitness}, Individual = {max_fitness_individual}")
+        self.logger_log.info(f"[{task_id}/{self._process_id}] || Average fitness = {avg_fitness}")
+        self.logger_log.debug("")
+
         entry = {
             "generation": generation,
             "min_fitness": min_fitness,
@@ -76,16 +91,33 @@ class ExperimentLogger:
             "avg_fitness": avg_fitness,
             "timestamp": datetime.datetime.now().isoformat()
         }
-        self.logger_log.info(f"[Task id: {task_id}] || Generation {generation}:")
-        self.logger_log.info(f"[Task id: {task_id}] || Min fitness = {min_fitness}, Individual = {min_fitness_individual}")
-        self.logger_log.info(f"[Task id: {task_id}] || Max fitness = {max_fitness}, Individual = {max_fitness_individual}")
-        self.logger_log.info(f"[Task id: {task_id}] || Average fitness = {avg_fitness}")
-        self.logger_log.debug("")
 
-        self.logs.append(entry)
-        with open(self.log_file_json, "w") as f:
-            json.dump(self.logs, f, indent=4)
+        process_key = f"process_{self._process_id}"
+
+        with self._lock:
+            if os.path.exists(self.log_file_json) and os.path.getsize(self.log_file_json) > 0:
+                with open(self.log_file_json, "r") as json_file:
+                    self.logs = json.load(json_file)
+            else:
+                self.logs = {}
+
+            if process_key not in self.logs:
+                self.logs[process_key] = []
+            self.logs[process_key].append(entry)
+
+            with open(self.log_file_json, "w") as json_file:
+                json.dump(self.logs, json_file, indent=4)
 
     def get_logs(self):
         """Получение всех логов"""
-        return self.logs
+        if os.path.exists(self.log_file_json):
+            with open(self.log_file_json, "r") as f:
+                self.logs = json.load(f)
+        else:
+            self.logs = {}
+
+    def set_process_id(self, process_id):
+        self._process_id = process_id
+
+    def set_lock(self, lock):
+        self._lock = lock

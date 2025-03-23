@@ -2,12 +2,17 @@ import copy
 import random
 
 import numpy as np
+
 # from multiprocessing import Pool
 from billiard.pool import Pool
+# from billiard.managers import BaseManager as Manager
+from billiard import Manager
 
 
+from api.utils.custom_logger import ExperimentLogger
 from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 from core.models.master_worker_model import MasterWorkerGA
+
 
 class IslandGA(GeneticAlgorithmMixin):
     REQUIRED_PARAMS = [
@@ -16,6 +21,7 @@ class IslandGA(GeneticAlgorithmMixin):
         "migration_interval",
         "migration_rate",
     ]
+
     def __init__(self,
                  num_islands,
                  migration_interval,
@@ -115,15 +121,27 @@ class IslandGA(GeneticAlgorithmMixin):
             with Pool(self.num_workers) as pool:
                 terminate_flags = pool.starmap(MasterWorkerGA.run_generation, [(island,) for island in self.islands])
             if True in terminate_flags:
+                island_num = terminate_flags.index(True)
                 break
 
             if generation % self.migration_interval == 0:
-                self.logger.log(f"[Task id: {self.task_id}] || Выполняется миграция между островами!")
+                self.logger.logger_log.info(f"[{self.task_id}] || Migration between islands")
                 self.migrate()
+                self.logger.logger_log.info(f"[{self.task_id}] || Migration success")
 
     def init_islands(self):
         self.islands = []
-        for island in range(self.num_islands):
+        for num_island in range(self.num_islands):
+            manager = Manager()
+            lock = manager.Lock()
+
+            experiment_name = self.logger.experiment_name
+            user_id = self.logger.user_id
+            task_id = self.logger.task_id
+            logger = ExperimentLogger(experiment_name, user_id, task_id)
+            logger.set_process_id(num_island)
+            logger.set_lock(lock)
+
             island = MasterWorkerGA(
                 self.population_size,
                 self.max_generations,
@@ -153,8 +171,8 @@ class IslandGA(GeneticAlgorithmMixin):
 
                 self.termination_function,
                 self.termination_kwargs,
-                self.logger
+                logger
             )
             island.population = self.initialize_population_function(self)
-            island.task_id = f"{self.task_id} {island = }"
+            island.task_id = self.task_id
             self.islands.append(island)

@@ -83,11 +83,11 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
         """Проверка условий завершения алгоритма."""
         if self.termination_function:
             if self.termination_function(self):
-                self.logger.logger_log.info(f"[Task id: {self.task_id}] || A termination function stopped the algorithm")
+                self.logger.logger_log.info(f"[{self.task_id}] || A termination function stopped the algorithm")
                 return True
 
         if self.generation >= self.max_generations:
-            self.logger.logger_log.info(f"[Task id: {self.task_id}] || The generational limit has been reached")
+            self.logger.logger_log.info(f"[{self.task_id}] || The generational limit has been reached")
             return True
 
         return False

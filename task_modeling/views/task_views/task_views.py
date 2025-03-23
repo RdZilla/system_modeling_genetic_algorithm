@@ -139,7 +139,7 @@ class TaskManagementView(generics.RetrieveAPIView, generics.DestroyAPIView, Prep
         # if task_status == Task.Action.STARTED:
         #     return bad_request_response("Задача уже запушена")
         # if task_status == Task.Action.FINISHED:
-        #     return bad_request_response("Задача уже завершена. Перезапись резульатов запрещена")
+        #     return bad_request_response("Задача уже завершена. Перезапись результатов запрещена")
 
         response = run_task(task)
         if status.is_client_error(response.status_code):

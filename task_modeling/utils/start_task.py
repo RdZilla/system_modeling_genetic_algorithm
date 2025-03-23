@@ -2,13 +2,12 @@ import importlib
 
 from celery import shared_task
 from rest_framework.response import Response
+from billiard import Manager
 
 from api.responses import bad_request_response, success_response
 from api.utils.custom_logger import ExperimentLogger
 from api.utils.load_custom_funcs.UserFunctionMixin import UserFunctionMixin
 from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
-from core.models.master_worker_model import MasterWorkerGA
-from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 from task_modeling.models import Task, Experiment
 from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 from task_modeling.utils.set_experiment_status import set_experiment_status
@@ -30,6 +29,11 @@ def wrapper_run_task(additional_params, ga_params, functions_routes, task_id):
     user_id = additional_params.get("user_id")
 
     logger = ExperimentLogger(experiment_name, user_id, task_id)
+    logger.set_process_id(0)
+
+    manager = Manager()
+    lock = manager.Lock()
+    logger.set_lock(lock)
 
     ga = SUPPORTED_MODELS_GA[algorithm_type]
 

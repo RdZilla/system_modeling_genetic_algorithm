@@ -1,4 +1,5 @@
 import time
+import traceback
 from abc import abstractmethod
 from multiprocessing import cpu_count
 
@@ -167,26 +168,28 @@ class GeneticAlgorithmMixin(LogResultMixin):
 
         status = Task.Action.FINISHED
         start_time = time.time()
-        self.logger.logger_log.info(f"[Task id: {task_id}] || started with config: {task_config}")
-        self.logger.logger_log.info(f"[Task id: {task_id}] || Start time: {start_time}")
+        self.logger.logger_log.info(f"[{task_id}] || started with config: {task_config}")
+        self.logger.logger_log.info(f"[{task_id}] || Start time: {start_time}")
         self.logger.logger_log.debug("")
 
         if self.termination_kwargs:
             self.termination_kwargs["start_time"] = start_time
             self.termination_kwargs["stagnation_generation_count"] = 0
 
-        # try:
-        self.start_calc()
-        # except Exception as error:
-        #     self.logger.logger_log.info(f"[Task id: {task_id}] || Algorithm has {error = }")
-        #     status = Task.Action.ERROR
+        try:
+            self.start_calc()
+        except Exception as error:
+            self.logger.logger_log.error(f"[Task id: {task_id}] || Algorithm has {error = }")
+            self.logger.logger_log.error(traceback.format_exc())
+
+            status = Task.Action.ERROR
 
         finish_time = time.time()
-        self.logger.logger_log.info(f"[Task id: {task_id}] || finished with status {status}")
-        self.logger.logger_log.info(f"[Task id: {task_id}] || Finish time: {finish_time}")
+        self.logger.logger_log.info(f"[{task_id}] || finished with status {status}")
+        self.logger.logger_log.info(f"[{task_id}] || Finish time: {finish_time}")
 
         execution_time = finish_time - start_time
-        self.logger.logger_log.info(f"[Task id: {task_id}] || Execution time: {execution_time}")
+        self.logger.logger_log.info(f"[{task_id}] || Execution time: {execution_time}")
         self.logger.logger_log.debug("")
 
         self.finish(task_id, status)
