@@ -108,7 +108,6 @@ class IslandGA(GeneticAlgorithmMixin):
 
             # Удаляем мигрантов из текущего острова
             self.islands[num_island].population = np.delete(self.islands[num_island].population, migrant_indices, axis=0)
-            self.logger.logger_log.info(f"[{self.task_id}/{num_island}] || Deleted {migrant_indices = }")
 
     def start_calc(self):
         self.init_islands()
