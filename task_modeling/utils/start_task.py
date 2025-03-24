@@ -7,9 +7,6 @@ from api.responses import bad_request_response, success_response
 from api.utils.custom_logger import ExperimentLogger
 from api.utils.load_custom_funcs.UserFunctionMixin import UserFunctionMixin
 from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
-from core.models.asynchronous_model import AsynchronousGA
-from core.models.island_model import IslandGA
-from core.models.master_worker_model import MasterWorkerGA
 from task_modeling.models import Task, Experiment
 from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 from task_modeling.utils.set_experiment_status import set_experiment_status
@@ -25,15 +22,15 @@ def get_function_from_string(path: str):
 @shared_task
 def wrapper_run_task(additional_params, ga_params, functions_routes, task_id):
     algorithm_type = additional_params.get("algorithm_type")
+
     task_config = additional_params.get("task_config")
     experiment_name = additional_params.get("experiment_name")
     user_id = additional_params.get("user_id")
-    logger = ExperimentLogger(experiment_name, user_id, task_id)
 
-    if algorithm_type == "master_worker":
-        ga = MasterWorkerGA
-    else:
-        ga = MasterWorkerGA
+    logger = ExperimentLogger(experiment_name, user_id, task_id)
+    logger.set_process_id(0)
+
+    ga = SUPPORTED_MODELS_GA[algorithm_type]
 
     ga = ga(**ga_params,
             logger=logger)
@@ -45,7 +42,7 @@ def wrapper_run_task(additional_params, ga_params, functions_routes, task_id):
     return ga.run(task_id, task_config)
 
 
-def check_usability_function(functions_params, functions_mapping, task):
+def check_usability_function(algorithm_type, functions_params, functions_mapping, task):
     (adaptation_functions,
      crossover_functions,
      fitness_functions,
@@ -77,7 +74,8 @@ def check_usability_function(functions_params, functions_mapping, task):
                 task.save()
                 return bad_request_response(f"Unsupported {function_type =}")
 
-        if function_type not in MasterWorkerGA.REQUIRED_PARAMS:
+        ga_model = SUPPORTED_MODELS_GA[algorithm_type]
+        if function_type not in ga_model.REQUIRED_PARAMS:
             continue
         function_route = function_mapping.get(function_name, None)
 
@@ -98,16 +96,15 @@ def run_task(task: Task) -> Response:
 
     task_config = task.config.config
 
-    algorithm_type = task_config.get("algorithm")
-
-    validate_config = {}
-
-    validate_result = PrepareTaskConfigMixin.validate_task_config(validate_config,
-                                                                  None,
+    validate_result = PrepareTaskConfigMixin.validate_task_config(None,
                                                                   task_config,
                                                                   partial_check=True)
     if validate_result:
-        return bad_request_response("Error in validate task config")
+        task.status = Task.Action.ERROR
+        task.save()
+        return bad_request_response(f"Ошибка валидации конфигурации: {validate_result}")
+
+    algorithm_type = task_config.pop("algorithm")
 
     additional_params = {
         "experiment_name": experiment_name,
@@ -117,56 +114,36 @@ def run_task(task: Task) -> Response:
         "algorithm_type": algorithm_type,
     }
 
-    ga_params = {
-        "population_size": task_config.get("population_size"),
-        "max_generations": task_config.get("max_generations"),
-
-        "num_workers": task_config.get("num_workers"),
-
-        # Вероятности
-        "mutation_rate": task_config.get("mutation_rate"),
-        "crossover_rate": task_config.get("crossover_rate"),
-        "selection_rate": task_config.get("selection_rate"),
-
-        # дополнительные параметры для функций
-        "adaptation_kwargs": task_config.get("adaptation_kwargs"),
-        "crossover_kwargs": task_config.get("crossover_kwargs"),
-        "fitness_kwargs": task_config.get("fitness_kwargs"),
-        "initialize_population_kwargs": task_config.get("initialize_population_kwargs"),
-        "mutation_kwargs": task_config.get("mutation_kwargs"),
-        "selection_kwargs": task_config.get("selection_kwargs"),
-        "termination_kwargs": task_config.get("termination_kwargs"),
-    }
-
-    # Названия вычислительных функций
-    functions_params = {
-        "adaptation_function": task_config.get("adaptation_function"),
-        "crossover_function": task_config.get("crossover_function"),
-        "fitness_function": task_config.get("fitness_function"),
-        "initialize_population_function": task_config.get("initialize_population_function"),
-        "mutation_function": task_config.get("mutation_function"),
-        "selection_function": task_config.get("selection_function"),
-        "termination_function": task_config.get("termination_function"),
-    }
+    function_keys = [
+        "adaptation_function",
+        "crossover_function",
+        "fitness_function",
+        "initialize_population_function",
+        "mutation_function",
+        "selection_function",
+        "termination_function",
+    ]
+    functions_params = {}
+    for function_key in function_keys:
+        functions_params[function_key] = task_config.pop(function_key, None)
 
     functions_mapping = UserFunctionMixin.get_functions_mapping(user_id)
     if isinstance(functions_mapping, Response):
-        return functions_mapping
-
-    functions_routes = check_usability_function(functions_params, functions_mapping, task)
-    if isinstance(functions_routes, Response):
-        return functions_routes
-
-    if algorithm_type not in SUPPORTED_MODELS_GA:
         task.status = Task.Action.ERROR
         task.save()
-        return bad_request_response("Invalid algorithm type")
+        return functions_mapping
+
+    functions_routes = check_usability_function(algorithm_type, functions_params, functions_mapping, task)
+    if isinstance(functions_routes, Response):
+        task.status = Task.Action.ERROR
+        task.save()
+        return functions_routes
 
     task.status = Task.Action.STARTED
     task.save()
     experiment_status = Experiment.Action.STARTED
     set_experiment_status(task, experiment_status)
 
-    # wrapper_run_task(additional_params, ga_params, functions_routes, task_id)
-    wrapper_run_task.delay(additional_params, ga_params, functions_routes, task_id)
+    # wrapper_run_task(additional_params, task_config, functions_routes, task_id)
+    wrapper_run_task.delay(additional_params, task_config, functions_routes, task_id)
     return success_response(f"Task {task.id} started successfully")

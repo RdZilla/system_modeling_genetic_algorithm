@@ -43,7 +43,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
 
-#  web:
+#  backend:
 #    build:
 #      context: .
 #      dockerfile: ./docker/web/Dockerfile
@@ -51,13 +51,15 @@ services:
 #      - .env
 #    environment:
 #      POSTGRES_HOST: postgres
+#      REDIS_HOST: redis
 #    volumes:
 #      - .:/modeling_system
 #    ports:
 #      - '8000:8000'
 #    depends_on:
 #      - postgres
-
+#      - redis
+#
 #  frontend:
 #    build: ../frontend/.
 #    ports:

@@ -1,13 +1,18 @@
 import os.path
 
 from api.utils.load_custom_funcs.load_custom_functions import get_functions_with_import_paths
+
+from core.models.asynchronous_model import AsynchronousGA
+from core.models.island_model import IslandGA
+from core.models.master_worker_model import MasterWorkerGA
+
 from modeling_system_backend.settings import BASE_DIR
 
-SUPPORTED_MODELS_GA = [
-    "master_worker",
-    "island_model",
-    "asynchronous_model"
-]
+SUPPORTED_MODELS_GA = {
+    "master_worker": MasterWorkerGA,
+    "island_model": IslandGA,
+    "asynchronous_model": AsynchronousGA
+}
 
 route_to_core = os.path.join(BASE_DIR, "core")
 

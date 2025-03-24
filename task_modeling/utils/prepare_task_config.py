@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
 
+from api.responses import bad_request_response
+from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
 from core.models.master_worker_model import MasterWorkerGA
 from task_modeling.models import TaskConfig
 
@@ -8,12 +10,10 @@ class PrepareTaskConfigMixin:
     order_possible_params = [
         "algorithm",
         "population_size",
-        "chrom_length",
         "max_generations",
 
         "mutation_rate",
         "crossover_rate",
-        "selection_rate",
 
         "num_workers",
 
@@ -36,36 +36,41 @@ class PrepareTaskConfigMixin:
         "selection_kwargs",
 
         "termination_function",
-        "termination_kwargs"
+        "termination_kwargs",
+
+        "num_islands",
+        "migration_interval",
+        "migration_rate",
     ]
 
     @classmethod
     def validate_task_config(
             cls,
-            config: dict,
             config_name: (str | None),
             task_config: dict,
             partial_check=False
-    ) -> (dict | None):
+    ) -> (str | None):
         """
         Function for validate task config
-        :param config: Configuration requiring validation
         :param config_name: Configuration name requiring validation
         :param task_config: Configuration task requiring validation
         :param partial_check: Partial check
         :return: Configuration that has not passed validation
         """
         if not config_name and not partial_check:
-            return config
+            return "Invalid config name"
+
         algorithm_type = task_config.get("algorithm")
-        match algorithm_type:
-            case "master_worker":
-                required_params = MasterWorkerGA.REQUIRED_PARAMS
-            case _:
-                return config
+
+        ga_model = SUPPORTED_MODELS_GA.get(algorithm_type, None)
+        if not ga_model:
+            return "Invalid algorithm type"
+
+        required_params = ga_model.REQUIRED_PARAMS
+
         for required_param in required_params:
             if required_param not in task_config:
-                return config
+                return f"{required_param} is not valid"
 
     @classmethod
     def order_params_task_config(cls, config: dict) -> dict:
@@ -91,7 +96,7 @@ class PrepareTaskConfigMixin:
             config_name = config.get("name", None)
             task_config = config.get("config", {})
 
-            error_config = cls.validate_task_config(config, config_name, task_config)
+            error_config = cls.validate_task_config(config_name, task_config)
             if error_config:
                 error_task_configs = True
                 error_configs.append(error_config)

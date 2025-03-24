@@ -6,7 +6,7 @@ from redis.asyncio import lock
 class AsynchronousGA:
     def __init__(self, num_islands, population_size, max_generations, fitness_function,
                  crossover_function, mutation_function, migration_rate=0.1,
-                 mutation_rate=0.01, crossover_rate=0.7, selection_rate=0.5,
+                 mutation_rate=0.01, crossover_rate=0.7,
                  initialize_population_fn=None, termination_fn=None, adaptation_fn=None, selection_fn=None,
                  fitness_threshold=None, stagnation_threshold=None, stagnation_generations=5):
         """
@@ -19,7 +19,6 @@ class AsynchronousGA:
         migration_rate: Процент популяции для миграции
         mutation_rate: Вероятность мутации
         crossover_rate: Вероятность кроссовера
-        selection_rate: Вероятность селекции
         initialize_population_fn: Функция для инициализации популяции
         termination_fn: Функция завершения
         adaptation_fn: Функция адаптации параметров
@@ -35,7 +34,6 @@ class AsynchronousGA:
         self.migration_rate = migration_rate
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.selection_rate = selection_rate
 
         # Пользовательские функции
         self.initialize_population_fn = initialize_population_fn or self.default_initialize_population
@@ -50,15 +48,6 @@ class AsynchronousGA:
 
         # Инициализация островов
         self.islands = [self.initialize_population_fn() for _ in range(self.num_islands)]
-
-    def default_initialize_population(self):
-        """Инициализация популяции случайными хромосомами."""
-        return np.random.rand(self.population_size, 10)
-
-    def default_selection_fn(self, population, fitness):
-        """Стандартная функция селекции (турнирная)."""
-        indices = np.random.choice(len(population), size=self.population_size, replace=True)
-        return population[indices]
 
     def migrate(self, island_index):
         """Асинхронная миграция между островами."""

@@ -6,6 +6,7 @@
 *.json
 *.csv
 *.png
+*.tmp
 
 .coverage
 coverage.xml
