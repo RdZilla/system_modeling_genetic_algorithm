@@ -13,6 +13,7 @@ class PrepareTaskConfigMixin:
         "max_generations",
 
         "mutation_rate",
+        "selection_rate",
         "crossover_rate",
 
         "num_workers",

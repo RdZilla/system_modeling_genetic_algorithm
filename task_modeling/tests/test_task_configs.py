@@ -151,12 +151,32 @@ def test_put_task_config(client, setup_task_configs):
     new_data = {
         "name": "completely_new_config",
         "config": {
-            "algorithm": "master_worker",
-            "generations": 200,
-            "mutation_rate": 0.1,
-            "crossover_rate": 0.8,
-            "population_size": 500,
-            "fitness_function": "rastrigin"
+            'adaptation_function': '',
+            'adaptation_kwargs': {},
+            'algorithm': 'master_worker',
+            'crossover_function': 'single_point_crossover',
+            'crossover_kwargs': {},
+            'crossover_rate': 0.85,
+            'fitness_function': 'rastrigin_fitness',
+            'fitness_kwargs': {},
+            'initialize_population_function': 'random_initialization',
+            'initialize_population_kwargs': {
+                'chrom_length': 8,
+            },
+            'max_generations': 50,
+            'mutation_function': 'bitwise_mutation',
+            'mutation_kwargs': {},
+            'mutation_rate': 0.01,
+            'num_workers': 3,
+            'population_size': 50,
+            'selection_function': 'tournament_selection',
+            'selection_kwargs': {
+                'min_max_rule': 'min',
+                'tournament_size': '5',
+            },
+            'selection_rate': 0.95,
+            'termination_function': '',
+            'termination_kwargs': {},
         }
     }
 
@@ -176,7 +196,7 @@ def test_put_task_config(client, setup_task_configs):
 @pytest.mark.order(10)
 def test_put_invalid_task_config(client, setup_task_configs):
     task_config = setup_task_configs[0]
-    invalid_data = {"wrong_field": "value"}  # Полностью некорректные данные
+    invalid_data = TEST_TASK_CONFIG  # Дубликат
 
     response = client.put(
         reverse("task_config_management", args=[task_config.id]),
