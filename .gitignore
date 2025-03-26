@@ -1,3 +1,5 @@
+*.pyc
+
 .git
 .idea
 .venv
@@ -7,6 +9,8 @@
 *.csv
 *.png
 *.tmp
+
+/static
 
 .coverage
 coverage.xml
