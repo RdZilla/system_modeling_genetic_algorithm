@@ -6,7 +6,69 @@ on:
       - master
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    steps:
+      - name: 📥 Checkout репозиторий
+        uses: actions/checkout@v4
+
+      - name: 🐍 Установка Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: 📦 Установка зависимостей
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔧 Применение миграций
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DB_ENGINE: ${{ secrets.DB_ENGINE }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+        run: |
+          python manage.py migrate
+
+      - name: ✅ Запуск тестов с `pytest`
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DB_ENGINE: ${{ secrets.DB_ENGINE }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+        run: |
+          pytest -vv
+
   deploy:
+    needs: test
     name: Deploy on server
     runs-on: ubuntu-latest
 
