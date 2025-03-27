@@ -8,8 +8,6 @@ import logging
 from modeling_system_backend.settings import BASE_DIR
 
 
-debug_looger = logging.getLogger("common")
-
 def extract_kwargs_params_from_module_path(module_path):
     """Принимает путь в формате 'path.to.your.file' и возвращает список параметров, использующихся через kwargs.get()."""
     params = set()
@@ -18,8 +16,6 @@ def extract_kwargs_params_from_module_path(module_path):
         function_route = [*module_path.split(".")]
 
         file_route = function_route[:-1]
-        debug_looger.info(f"{file_route}] Start scanning")
-
         function_name = function_route[-1]
         file_path = os.path.join(BASE_DIR, *file_route) + ".py"
 
@@ -35,24 +31,13 @@ def extract_kwargs_params_from_module_path(module_path):
                 # Ищем внутри функции все вызовы kwargs.get()
                 for sub_node in ast.walk(node):
                     if isinstance(sub_node, ast.Call) and isinstance(sub_node.func, ast.Attribute):
-
-                        debug_looger.info(f"[{file_route}]    {sub_node.func.attr = }")
-
                         if sub_node.func.attr == 'get':
                             if len(sub_node.args) > 0:
                                 arg = sub_node.args[0]
-
-                                debug_looger.info(f"{file_route}]    {arg.s = } | {arg.value = }")
-
                                 if isinstance(arg, ast.Str):  # Python < 3.8
                                     params.add(arg.s)
-
-                                    debug_looger.info(f"{file_route}]    APPEND")
-
                                 elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):  # Python >= 3.8
                                     params.add(arg.value)
-
-                                    debug_looger.info(f"{file_route}]    APPEND")
                 break  # Нашли функцию — выходим из цикла
 
     except FileNotFoundError:
