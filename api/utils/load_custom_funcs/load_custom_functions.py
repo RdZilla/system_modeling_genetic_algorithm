@@ -18,6 +18,7 @@ def extract_kwargs_params_from_module_path(module_path):
         function_route = [*module_path.split(".")]
 
         file_route = function_route[:-1]
+        debug_looger.info(f"{file_route}] Start scanning")
 
         function_name = function_route[-1]
         file_path = os.path.join(BASE_DIR, *file_route) + ".py"
