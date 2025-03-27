@@ -5,12 +5,6 @@ import inspect
 
 from modeling_system_backend.settings import BASE_DIR
 
-import os
-import importlib.util
-import ast
-
-from modeling_system_backend.settings import BASE_DIR  # Убедись, что этот импорт корректен
-
 
 def extract_kwargs_params_from_module_path(module_path):
     """Принимает путь в формате 'path.to.your.file' и возвращает список параметров, использующихся через kwargs.get()."""
@@ -35,8 +29,10 @@ def extract_kwargs_params_from_module_path(module_path):
                 for sub_node in ast.walk(node):
                     if isinstance(sub_node, ast.Call) and isinstance(sub_node.func, ast.Attribute):
                         if sub_node.func.attr == 'get':
-                            if len(sub_node.args) > 0 and isinstance(sub_node.args[0], ast.Str):
-                                params.add(sub_node.args[0].s)
+                            if len(sub_node.args) > 0:
+                                arg = sub_node.args[0]
+                                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):  # Python >= 3.8
+                                    params.add(arg.value)
                 break  # Нашли функцию — выходим из цикла
 
     except FileNotFoundError:

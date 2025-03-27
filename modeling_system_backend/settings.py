@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'drf_spectacular_sidecar',
 
     'authorization',
-    'task_modeling'
+    'task_modeling',
+    'flower_redirect',
 ]
 
 MIDDLEWARE = [
