@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.init_population.random_initialization import random_initialization
+from core.init_population.random_init import random_init
 
 
 def custom_initialization(self):
@@ -25,5 +25,5 @@ def custom_initialization(self):
     num_known = min(len(known_solutions), pop_size)
     pop[:num_known] = known_solutions[:num_known]
     if num_known < pop_size:
-        pop[num_known:] = random_initialization(pop_size - num_known, chrom_length)
+        pop[num_known:] = random_init(pop_size - num_known, chrom_length)
     return pop

@@ -70,7 +70,7 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                                 "crossover_kwargs": {},
                                 "fitness_function": "rastrigin_fitness",
                                 "fitness_kwargs": {},
-                                "initialize_population_function": "random_initialization",
+                                "initialize_population_function": "random_init",
                                 "initialize_population_kwargs": {
                                     "chrom_length": 10,
                                 },
@@ -96,7 +96,7 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                                 "crossover_kwargs": {},
                                 "fitness_function": "rastrigin_fitness",
                                 "fitness_kwargs": {},
-                                "initialize_population_function": "random_initialization",
+                                "initialize_population_function": "random_init",
                                 "initialize_population_kwargs": {
                                     "chrom_length": 10,
                                 },
