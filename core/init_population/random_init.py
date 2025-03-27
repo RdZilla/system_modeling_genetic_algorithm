@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def random_initialization(self):
+def random_init(self):
     """Создает популяцию с равномерным распределением значений.
 
     Args:

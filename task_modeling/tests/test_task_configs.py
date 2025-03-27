@@ -159,7 +159,7 @@ def test_put_task_config(client, setup_task_configs):
             'crossover_rate': 0.85,
             'fitness_function': 'rastrigin_fitness',
             'fitness_kwargs': {},
-            'initialize_population_function': 'random_initialization',
+            'initialize_population_function': 'random_init',
             'initialize_population_kwargs': {
                 'chrom_length': 8,
             },
