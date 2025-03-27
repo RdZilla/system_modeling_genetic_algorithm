@@ -8,4 +8,4 @@ def is_admin(user):
 
 @user_passes_test(is_admin, login_url='/admin/login/')
 def flower_redirect(request):
-    return redirect("http://localhost:5555/flower")
+    return redirect(f'http://{request.get_host()}:5555/flower')
