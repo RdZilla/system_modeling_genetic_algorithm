@@ -31,7 +31,9 @@ def extract_kwargs_params_from_module_path(module_path):
                         if sub_node.func.attr == 'get':
                             if len(sub_node.args) > 0:
                                 arg = sub_node.args[0]
-                                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):  # Python >= 3.8
+                                if isinstance(arg, ast.Str):  # Python < 3.8
+                                    params.add(arg.s)
+                                elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):  # Python >= 3.8
                                     params.add(arg.value)
                 break  # Нашли функцию — выходим из цикла
 
