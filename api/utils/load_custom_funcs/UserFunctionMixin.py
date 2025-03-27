@@ -44,6 +44,9 @@ class UserFunctionMixin:
         if isinstance(functions_folder, Response):
             return functions_folder
 
+        for folder in functions_folder:
+            os.makedirs(folder, exist_ok=True)
+
         (user_adaptation_folder,
          user_crossover_folder,
          user_fitness_folder,
