@@ -84,6 +84,7 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            ${{ secrets.SET_TO_MAINTENANCE }}
             cd ${{ secrets.PATH_TO_PROJECT }}
             git pull origin master
             source ${{ secrets.PATH_TO_VENV }}
@@ -91,4 +92,5 @@ jobs:
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
             sudo systemctl restart gunicorn
+            ${{ secrets.DISABLE_MAINTENANCE }}
           EOF
