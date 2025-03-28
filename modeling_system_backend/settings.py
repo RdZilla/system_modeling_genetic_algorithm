@@ -40,7 +40,6 @@ INSTALLED_APPS = [
 
     'authorization',
     'task_modeling',
-    'flower_redirect',
 ]
 
 MIDDLEWARE = [
