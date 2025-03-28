@@ -56,8 +56,9 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", 'True').lower() == 'true'
 if not CORS_ALLOW_ALL_ORIGINS:
-    cors_allowed = str(os.environ.get("CORS_ALLOWED_ORIGINS")).replace(" ", "")
-    CORS_ALLOWED_ORIGINS = cors_allowed.split(",")
+    CORS_ALLOWED_ORIGINS = str(os.environ.get("CORS_ALLOWED_ORIGINS")).replace(" ", "").split(",")
+
+CSRF_TRUSTED_ORIGINS = str(os.environ.get("CSRF_TRUSTED_ORIGINS")).replace(" ", "").split(",")
 
 ROOT_URLCONF = 'modeling_system_backend.urls'
 
