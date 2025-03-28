@@ -9,7 +9,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/schema/', SpectacularAPIView.as_view(api_version=api_version), name='schema'),
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),
-    path('flower/', include('flower_redirect.urls')),
 
     path(api_url + 'auth/', include('authorization.urls')),
     path(api_url + 'task_module/', include('task_modeling.urls')),

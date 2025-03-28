@@ -14,3 +14,7 @@
 .coverage
 coverage.xml
 /nginx
+
+flower.bak
+flower.dat
+flower.dir
