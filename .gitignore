@@ -11,6 +11,6 @@
 *.tmp
 
 /static
-
 .coverage
 coverage.xml
+/nginx
