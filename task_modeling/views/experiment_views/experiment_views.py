@@ -138,7 +138,8 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
 
         error_task_configs, existing_configs, created_configs = self.get_or_create_task_config(configs, user)
         if error_task_configs:
-            error_message = "Ошибки создания конфигурации"
+            error_config = ';\n'.join(created_configs)
+            error_message = f"Ошибки создания конфигурации: {error_config}"
             return bad_request_response(error_message)
 
         experiment_obj = Experiment.objects.create(
@@ -147,7 +148,6 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         )
 
         configs = existing_configs + created_configs
-
         for config in configs:
             Task.objects.create(
                 config=config,
@@ -169,9 +169,10 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         if not experiment_name:
             error_text = "Название эксперимента должно быть заполнено"
             return bad_request_response(error_text)
+
         exist_experiment = Experiment.objects.filter(name=experiment_name)
         if exist_experiment:
-            return bad_request_response(f"Experiment with name={experiment_name} already exist")
+            return bad_request_response(f"Experiment with name='{experiment_name}' already exist")
 
 
 class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):

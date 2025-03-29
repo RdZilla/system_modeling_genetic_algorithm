@@ -69,7 +69,7 @@ class AsynchronousGA:
         for generation in range(self.max_generations):
             fitness = self.evaluate_fitness(island)
             if self.termination_fn and self.termination_fn(generation, fitness):
-                print(f"Остров {island_index}: Завершение по пользовательской функции.")
+                # logger.info(f"Остров {island_index}: Завершение по пользовательской функции.")
                 return island, fitness
 
             # Селекция, кроссовер и мутация

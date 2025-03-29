@@ -93,6 +93,10 @@ class PrepareTaskConfigMixin:
         existing_config = []
         created_configs = []
 
+        if not configs:
+            error_task_configs = True
+            error_configs.append("config should be append")
+
         for config in configs:
             config_name = config.get("name", None)
             task_config = config.get("config", {})
