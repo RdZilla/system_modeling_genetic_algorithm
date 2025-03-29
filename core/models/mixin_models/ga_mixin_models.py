@@ -203,3 +203,6 @@ class GeneticAlgorithmMixin(LogResultMixin):
 
         experiment_status = Experiment.Action.FINISHED
         set_experiment_status(task_obj, experiment_status)
+
+        if status == Task.Action.ERROR:
+            raise RuntimeError

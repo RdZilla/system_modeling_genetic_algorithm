@@ -7,6 +7,7 @@ import logging
 
 from modeling_system_backend.settings import BASE_DIR
 
+common_logger = logging.getLogger("common")
 
 def extract_kwargs_params_from_module_path(module_path):
     """Принимает путь в формате 'path.to.your.file' и возвращает список параметров, использующихся через kwargs.get()."""
@@ -41,9 +42,9 @@ def extract_kwargs_params_from_module_path(module_path):
                 break  # Нашли функцию — выходим из цикла
 
     except FileNotFoundError:
-        print(f"Файл {module_path} не найден.")
+        common_logger.error(f"Файл {module_path} не найден.")
     except Exception as e:
-        print(f"Ошибка при обработке файла {module_path}: {e}")
+        common_logger.error(f"Ошибка при обработке файла {module_path}: {e}")
 
     return list(params)
 

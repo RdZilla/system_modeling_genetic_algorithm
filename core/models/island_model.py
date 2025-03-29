@@ -99,7 +99,6 @@ class IslandGA(GeneticAlgorithmMixin):
 
             # Случайно выбираем индивидов для миграции
             migrant_indices = random.sample(range(population_size), num_migrants)
-            self.logger.logger_log.info(f"[{self.task_id}/{num_island}] || Choose {migrant_indices = }")
 
             migrants = population[migrant_indices]
 
