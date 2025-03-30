@@ -54,7 +54,7 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
                 function_response[function_name] = function_kwargs
             response[key] = function_response
 
-        return success_response(response)
+        return Response(response, status=status.HTTP_200_OK)
 
     @extend_schema(
         operation_id='upload_files',
@@ -149,3 +149,22 @@ class MathFunctionsView(generics.GenericAPIView, UserFunctionMixin):
             return no_content_response(function_name)
         else:
             return not_found_response(f"function with {function_name = }")
+
+
+class GetSupportedAlgorithmView(generics.GenericAPIView):
+    @extend_schema(
+        tags=["Math Functions"],
+        summary="Get supported algorithms",
+        description="Get info about supported algorithms",
+        responses={
+            status.HTTP_200_OK: MathFunctionsSerializer,
+            **SCHEMA_GET_POST_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
+        }
+    )
+    def get(self, request, *args, **kwargs):
+
+        response = {}
+        for model_name, model_class in SUPPORTED_MODELS_GA.items():
+            response[model_name] = model_class.REQUIRED_PARAMS
+        return Response(response, status=status.HTTP_200_OK)

@@ -2,8 +2,17 @@ import numpy as np
 from celery import shared_task
 from redis.asyncio import lock
 
+from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
+
 
 class AsynchronousGA:
+    REQUIRED_PARAMS = [
+        *GeneticAlgorithmMixin.REQUIRED_PARAMS,
+        "num_islands",
+        "migration_interval",
+        "migration_rate",
+    ]
+
     def __init__(self, num_islands, population_size, max_generations, fitness_function,
                  crossover_function, mutation_function, migration_rate=0.1,
                  mutation_rate=0.01, crossover_rate=0.7,
