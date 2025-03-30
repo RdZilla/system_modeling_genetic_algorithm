@@ -140,10 +140,12 @@ def run_task(task: Task) -> Response:
         return functions_routes
 
     task.status = Task.Action.STARTED
-    task.save()
+
     experiment_status = Experiment.Action.STARTED
     set_experiment_status(task, experiment_status)
 
     # wrapper_run_task(additional_params, task_config, functions_routes, task_id)
-    wrapper_run_task.delay(additional_params, task_config, functions_routes, task_id)
+    celery_task_id = wrapper_run_task.delay(additional_params, task_config, functions_routes, task_id)
+    task.celery_task_id = celery_task_id
+    task.save()
     return success_response(f"Task {task.id} started successfully")

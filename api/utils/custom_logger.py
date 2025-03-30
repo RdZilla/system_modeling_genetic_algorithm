@@ -9,7 +9,12 @@ RESULT_ROOT = settings.RESULT_ROOT
 
 TEXT_LOG_FILE_NAME = "text_log.log"
 JSON_LOG_FILE_NAME = "json_log.json"
+CSV_LOG_FILE_NAME = "csv_log.json"
 
+BEST_PLOT_FILE_NAME = "best_plot.png"
+ALL_RESULTS_PLOT_FILE_NAME = "all_worker_plot.png"
+
+RESULT_KEY = "results"
 
 def get_user_folder_name(user_id) -> str:
     return f"user_id-{user_id}"
@@ -132,6 +137,18 @@ class ExperimentLogger:
         with open(self.log_file_json, "w") as json_file:
             json.dump(full_log, json_file, indent=4)
 
+    def create_result_log(self):
+        process_key_name = f"process_{self._process_id}"
+
+        with open(self.log_file_json, "r") as json_file:
+            process_log = json.load(json_file)
+
+        process_data = process_log.get(process_key_name)
+        process_log[RESULT_KEY] = process_data
+
+        with open(self.log_file_json, "w") as json_file:
+            json.dump(process_log, json_file, indent=4)
+
     def get_logs(self):
         """Получение всех логов"""
         if os.path.exists(self.log_file_json):
@@ -139,7 +156,6 @@ class ExperimentLogger:
                 self.logs = json.load(f)
         else:
             self.logs = {}
-
 
     def get_process_id(self):
         return self._process_id

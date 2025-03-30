@@ -72,6 +72,7 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
 
         self.fitness = None
         self.previous_fitness = None
+        self.terminate = False
 
     def evaluate_fitness(self, population):
         """Оценка фитнеса для каждой хромосомы в популяции с использованием Celery."""
@@ -97,6 +98,7 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
         self.fitness = self.evaluate_fitness(self.population)
         self.log_process(self.task_id, self.generation, self.population, self.fitness)
         if self.check_termination_conditions():
+            self.terminate = True
             return True
 
         self.previous_population = self.population
@@ -143,3 +145,5 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
             terminate_flag = self.run_generation()
             if terminate_flag:
                 break
+
+        self.logger.create_result_log()

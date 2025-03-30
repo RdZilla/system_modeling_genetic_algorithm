@@ -106,7 +106,8 @@ class IslandGA(GeneticAlgorithmMixin):
             self.islands[next_island].population = np.vstack((self.islands[next_island].population, migrants))
 
             # Удаляем мигрантов из текущего острова
-            self.islands[num_island].population = np.delete(self.islands[num_island].population, migrant_indices, axis=0)
+            self.islands[num_island].population = np.delete(self.islands[num_island].population, migrant_indices,
+                                                            axis=0)
 
     def start_calc(self):
         self.init_islands()
@@ -121,12 +122,14 @@ class IslandGA(GeneticAlgorithmMixin):
                 terminate_flags = pool.starmap(MasterWorkerGA.run_generation, [(island,) for island in self.islands])
             self.logger.merge_logs(self.num_islands)
 
-            if True in terminate_flags:
-                island_num = terminate_flags.index(True)
+            self.logger.logger_log.info(f"[{self.task_id}] || {terminate_flags = }")
+
+            is_created_log = self.create_result_log()
+            if is_created_log:
                 break
 
             if generation % self.migration_interval == 0:
-                self.logger.logger_log.info(f"[{self.task_id}] || Migration between islands")
+                self.logger.logger_log.info(f"c || Migration between islands")
                 self.migrate()
                 self.logger.logger_log.info(f"[{self.task_id}] || Migration success")
 
@@ -173,3 +176,9 @@ class IslandGA(GeneticAlgorithmMixin):
             island.population = self.initialize_population_function(self)
             island.task_id = self.task_id
             self.islands.append(island)
+
+    def create_result_log(self):
+        for island in self.islands:
+            if island.terminate:
+                island.logger.create_result_log()
+                return True
