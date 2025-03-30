@@ -90,6 +90,8 @@ class Task(models.Model):
     config = models.ForeignKey(TaskConfig, on_delete=models.SET_NULL, null=True, verbose_name="Конфигурация задачи")
     experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, verbose_name="Связь с экспериментом",
                                    help_text="В рамках какого эксперимента создана задача")
+    celery_task_id = models.CharField(blank=True, null=True, verbose_name="ID celery задачи",
+                                      help_text="ID Celery задачи")
 
     def __str__(self):
         return f"{self.id} with config id: {self.config_id}"

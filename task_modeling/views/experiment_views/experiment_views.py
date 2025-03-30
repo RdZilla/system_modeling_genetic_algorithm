@@ -10,6 +10,7 @@ from api.responses import bad_request_response, created_response, not_found_resp
 from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED, \
     SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, STATUS_204, STATUS_405
 from api.utils.custom_logger import get_user_folder_name
+from modeling_system_backend.celery import app
 from modeling_system_backend.settings import RESULT_ROOT
 from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 from task_modeling.models import Experiment, Task
@@ -203,6 +204,10 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
                 name="start", description='The parameter for starting the calculations of the experiment',
                 type=bool, enum=[True, False], required=False
             ),
+            OpenApiParameter(
+                name="stop", description='The parameter for stopping the calculations of the experiment',
+                type=bool, enum=[True, False], required=False
+            ),
         ],
         responses={
             status.HTTP_200_OK: ExperimentSerializer,
@@ -219,10 +224,14 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
         if is_start:
             return self.start_experiment(experiment)
 
+        is_stop = request.query_params.get("stop", "False").lower() == "true"
+        if is_stop:
+            return self.stop_experiment(experiment)
+
         return super().get(request, *args, **kwargs)
 
     @staticmethod
-    def start_experiment(experiment):
+    def start_experiment(experiment: Experiment):
         tasks = Task.objects.select_related(
             "config", "experiment"
         ).filter(
@@ -251,6 +260,42 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
             experiment.status = Experiment.Action.ERROR
             experiment.save()
             return bad_request_response(error_list)
+        return success_response(response_list)
+
+    @staticmethod
+    def stop_experiment(experiment: Experiment):
+        tasks = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(
+            experiment=experiment,
+            # status=Task.Action.CREATED
+        )
+
+        if not tasks:
+            experiment_id = experiment.id
+            return not_found_response(f"task with {experiment_id = }")
+
+        response_list = []
+        error_list = []
+
+        for task in tasks:
+            celery_task_id = task.celery_task_id
+            if not celery_task_id:
+                error_list.append({task.id: "exist celery task id"})
+                continue
+
+            app.control.revoke(celery_task_id, terminate=True)
+            response_list.append({task.id: "celery task has been cancelled"})
+
+            # task.status = Task.Action.STOPPED
+            # task.save()
+        if error_list:
+            experiment.status = Experiment.Action.ERROR
+            experiment.save()
+            return bad_request_response(error_list)
+
+        # experiment.status = Experiment.Action.STOPPED
+        # experiment.save()
         return success_response(response_list)
 
     @extend_schema(
