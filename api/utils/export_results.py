@@ -65,3 +65,17 @@ def plot_results(results, filename="results/fitness_plot.png", only_best_result=
     plt.grid(True)
     plt.savefig(filename)
     plt.show()
+
+
+def best_result_json(results, filename="results/fitness_plot.png"):
+    result_data = results.get(RESULT_KEY)
+
+    results = {}
+    if result_data:
+        results[RESULT_KEY] = result_data
+
+    if not results:
+        return "Невозможно выгрузить данные"
+
+    with open(filename, "w") as json_file:
+        json.dump(results, json_file, indent=4)

@@ -11,9 +11,10 @@ from api.responses import not_found_response, permission_denied_response, bad_re
     success_response
 from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTROY_STATUSES, \
     SCHEMA_PERMISSION_DENIED, STATUS_204
-from api.utils.custom_logger import get_user_folder_name, get_task_folder_name, JSON_LOG_FILE_NAME, \
-    BEST_PLOT_FILE_NAME, ALL_RESULTS_PLOT_FILE_NAME, ALL_CSV_RESULTS_FILE_NAME, CSV_RESULT_FILE_NAME
-from api.utils.export_results import plot_results, save_results_to_csv
+from api.utils.custom_logger import get_user_folder_name, get_task_folder_name, ALL_JSON_RESULTS_FILE_NAME, \
+    BEST_PLOT_FILE_NAME, ALL_RESULTS_PLOT_FILE_NAME, ALL_CSV_RESULTS_FILE_NAME, CSV_RESULT_FILE_NAME, \
+    JSON_RESULT_FILE_NAME
+from api.utils.export_results import plot_results, save_results_to_csv, best_result_json
 from modeling_system_backend.celery import app
 from modeling_system_backend.settings import RESULT_ROOT
 
@@ -242,6 +243,14 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
                 name="csv_all_results", description='The parameter for getting all results in csv',
                 type=bool, enum=[True, False], required=False
             ),
+            OpenApiParameter(
+                name="json_best_results", description='The parameter for getting best results in json',
+                type=bool, enum=[True, False], required=False
+            ),
+            OpenApiParameter(
+                name="json_all_results", description='The parameter for getting all results in json',
+                type=bool, enum=[True, False], required=False
+            ),
         ],
         responses={
             status.HTTP_200_OK: TaskSerializer,
@@ -279,25 +288,32 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
         if csv_all_results.lower() == "true":
             return self.get_final_result_csv(result_path, only_best_result=False)
 
+        json_best_results = request.query_params.get("json_best_results", "false")
+        if json_best_results.lower() == "true":
+            return self.get_final_result_json(result_path, only_best_result=True)
+        json_all_results = request.query_params.get("json_all_results", "false")
+        if json_all_results.lower() == "true":
+            return self.get_final_result_json(result_path, only_best_result=False)
+
     def get_final_result_png(self, result_path, only_best_result=False):
         file_name = ALL_RESULTS_PLOT_FILE_NAME
         if only_best_result:
             file_name = BEST_PLOT_FILE_NAME
-        json_path = os.path.join(result_path, JSON_LOG_FILE_NAME)
+        json_path = os.path.join(result_path, ALL_JSON_RESULTS_FILE_NAME)
         with open(json_path, "r") as json_file:
             result_dict = json.load(json_file)
         plot_path = os.path.join(result_path, file_name)
         not_valid = plot_results(result_dict, plot_path, only_best_result=only_best_result)
         if not_valid:
             return bad_request_response(not_valid)
-        return self.get_picture(plot_path)
+        return self.get_picture_response(plot_path)
 
     def get_final_result_csv(self, result_path, only_best_result=False):
         file_name = ALL_CSV_RESULTS_FILE_NAME
         if only_best_result:
             file_name = CSV_RESULT_FILE_NAME
 
-        json_path = os.path.join(result_path, JSON_LOG_FILE_NAME)
+        json_path = os.path.join(result_path, ALL_JSON_RESULTS_FILE_NAME)
         with open(json_path, "r") as json_file:
             result_dict = json.load(json_file)
         csv_path = os.path.join(result_path, file_name)
@@ -305,18 +321,41 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
         not_valid = save_results_to_csv(result_dict, csv_path, only_best_result=only_best_result)
         if not_valid:
             return bad_request_response(not_valid)
-        return self.get_csv(csv_path)
+        return self.get_csv_response(csv_path)
+
+    def get_final_result_json(self, result_path, only_best_result=False):
+        json_path = os.path.join(result_path, ALL_JSON_RESULTS_FILE_NAME)
+
+        if only_best_result:
+            file_name = JSON_RESULT_FILE_NAME
+            with open(json_path, "r") as json_file:
+                result_dict = json.load(json_file)
+            json_best_path = os.path.join(result_path, file_name)
+
+            not_valid = best_result_json(result_dict, json_best_path)
+            if not_valid:
+                return bad_request_response(not_valid)
+            return self.get_json_response(json_best_path)
+        return self.get_json_response(json_path)
 
     @staticmethod
-    def get_picture(plot_path):
+    def get_picture_response(plot_path):
         with open(plot_path, 'rb'):
             response = FileResponse(open(plot_path, 'rb'), content_type='image/png', filename="plot_results.png")
             response['Content-Disposition'] = 'attachment; filename="plot_results.png"'
         return response
 
     @staticmethod
-    def get_csv(csv_path):
+    def get_csv_response(csv_path):
         with open(csv_path, 'rb'):
-            response = FileResponse(open(csv_path, 'rb'), content_type="text/csv", filename="plot_results.csv")
-            response['Content-Disposition'] = 'attachment; filename="plot_results.csv"'
+            response = FileResponse(open(csv_path, 'rb'), content_type="text/csv", filename="csv_results.csv")
+            response['Content-Disposition'] = 'attachment; filename="csv_results.csv"'
+        return response
+
+    @staticmethod
+    def get_json_response(json_path):
+        with open(json_path, 'rb'):
+            response = FileResponse(open(json_path, 'rb'), content_type="application/json",
+                                    filename="json_results.json")
+            response['Content-Disposition'] = 'attachment; filename="json_results.json"'
         return response
