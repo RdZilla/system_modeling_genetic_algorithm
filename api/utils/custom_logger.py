@@ -18,6 +18,8 @@ ALL_CSV_RESULTS_FILE_NAME = "all_worker_csv.csv"
 BEST_PLOT_FILE_NAME = "best_plot.png"
 ALL_RESULTS_PLOT_FILE_NAME = "all_worker_plot.png"
 
+PDF_RESULTS_FILE_NAME = "export_file.pdf"
+
 RESULT_KEY = "results"
 
 def get_user_folder_name(user_id) -> str:

@@ -13,8 +13,8 @@ from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_RETRIEVE_UPDATE_DESTRO
     SCHEMA_PERMISSION_DENIED, STATUS_204
 from api.utils.custom_logger import get_user_folder_name, get_task_folder_name, ALL_JSON_RESULTS_FILE_NAME, \
     BEST_PLOT_FILE_NAME, ALL_RESULTS_PLOT_FILE_NAME, ALL_CSV_RESULTS_FILE_NAME, CSV_RESULT_FILE_NAME, \
-    JSON_RESULT_FILE_NAME
-from api.utils.export_results import plot_results, save_results_to_csv, best_result_json
+    JSON_RESULT_FILE_NAME, PDF_RESULTS_FILE_NAME
+from api.utils.export_results import plot_results, save_results_to_csv, best_result_json, save_results_to_pdf
 from modeling_system_backend.celery import app
 from modeling_system_backend.settings import RESULT_ROOT
 
@@ -251,6 +251,10 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
                 name="json_all_results", description='The parameter for getting all results in json',
                 type=bool, enum=[True, False], required=False
             ),
+            OpenApiParameter(
+                name="pdf_results", description='The parameter for getting all results in pdf',
+                type=bool, enum=[True, False], required=False
+            ),
         ],
         responses={
             status.HTTP_200_OK: TaskSerializer,
@@ -275,7 +279,6 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
         final_result_png = request.query_params.get("final_result_png", "false")
         if final_result_png.lower() == "true":
             return self.get_final_result_png(result_path, only_best_result=True)
-
         all_workers = request.query_params.get("all_workers_png", "false")
         if all_workers.lower() == "true":
             return self.get_final_result_png(result_path, only_best_result=False)
@@ -283,7 +286,6 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
         csv_best_results = request.query_params.get("csv_best_results", "false")
         if csv_best_results.lower() == "true":
             return self.get_final_result_csv(result_path, only_best_result=True)
-
         csv_all_results = request.query_params.get("csv_all_results", "false")
         if csv_all_results.lower() == "true":
             return self.get_final_result_csv(result_path, only_best_result=False)
@@ -294,6 +296,10 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
         json_all_results = request.query_params.get("json_all_results", "false")
         if json_all_results.lower() == "true":
             return self.get_final_result_json(result_path, only_best_result=False)
+
+        pdf_results = request.query_params.get("pdf_results", "false")
+        if pdf_results.lower() == "true":
+            return self.get_final_result_pdf(result_path)
 
     def get_final_result_png(self, result_path, only_best_result=False):
         file_name = ALL_RESULTS_PLOT_FILE_NAME
@@ -338,6 +344,19 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
             return self.get_json_response(json_best_path)
         return self.get_json_response(json_path)
 
+    def get_final_result_pdf(self, result_path):
+        json_path = os.path.join(result_path, ALL_JSON_RESULTS_FILE_NAME)
+
+        file_name = PDF_RESULTS_FILE_NAME
+        with open(json_path, "r") as json_file:
+            result_dict = json.load(json_file)
+        pdf_path = os.path.join(result_path, file_name)
+
+        not_valid = save_results_to_pdf(result_dict, pdf_path)
+        if not_valid:
+            return bad_request_response(not_valid)
+        return self.get_pdf_response(pdf_path)
+
     @staticmethod
     def get_picture_response(plot_path):
         with open(plot_path, 'rb'):
@@ -358,4 +377,11 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
             response = FileResponse(open(json_path, 'rb'), content_type="application/json",
                                     filename="json_results.json")
             response['Content-Disposition'] = 'attachment; filename="json_results.json"'
+        return response
+
+    @staticmethod
+    def get_pdf_response(pdf_path):
+        with open(pdf_path, 'rb'):
+            response = FileResponse(open(pdf_path, 'rb'), content_type="application/pdf", filename="pdf_results.pdf")
+            response['Content-Disposition'] = 'attachment; filename="pdf_results.pdf"'
         return response

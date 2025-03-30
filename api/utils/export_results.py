@@ -2,6 +2,8 @@ import json
 import csv
 
 import matplotlib.pyplot as plt
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 from api.utils.custom_logger import RESULT_KEY
 
@@ -79,3 +81,32 @@ def best_result_json(results, filename="results/fitness_plot.png"):
 
     with open(filename, "w") as json_file:
         json.dump(results, json_file, indent=4)
+
+
+def save_results_to_pdf(results, filename="results/fitness_results.pdf"):
+    """Сохранение результатов в PDF файл"""
+    c = canvas.Canvas(filename, pagesize=letter)
+    width, height = letter
+    y_position = height - 40
+
+    c.setFont("Helvetica", 12)
+    c.drawString(30, y_position, "Fitness Results")
+    y_position -= 20
+
+    for process, data in results.items():
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(30, y_position, f"Process: {process}")
+        y_position -= 15
+        c.setFont("Helvetica", 9)
+        c.drawString(30, y_position, "Generation | Min Fitness | Max Fitness | Avg Fitness | Timestamp")
+        y_position -= 15
+
+        for entry in data:
+            row = f"{entry.get('generation')} | {entry.get('min_fitness')} | {entry.get('max_fitness')} | {entry.get('avg_fitness')} | {entry.get('timestamp')}"
+            c.drawString(30, y_position, row)
+            y_position -= 15
+            if y_position < 40:
+                c.showPage()
+                y_position = height - 40
+
+    c.save()
