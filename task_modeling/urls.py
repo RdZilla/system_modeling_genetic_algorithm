@@ -1,6 +1,7 @@
 from django.urls import path
 
-from task_modeling.views.experiment_views.experiment_views import ExperimentView, ExperimentManagementView
+from task_modeling.views.experiment_views.experiment_views import ExperimentView, ExperimentManagementView, \
+    MultipleLaunchView
 from task_modeling.views.task_config_views.task_config_views import TaskConfigView, TaskConfigManagementView
 from task_modeling.views.math_functions.math_functions_view import MathFunctionsView
 from task_modeling.views.task_views.task_views import TaskView, TaskManagementView, ExportResult
@@ -15,5 +16,6 @@ urlpatterns = [
     path("task_config", TaskConfigView.as_view(), name="list_configs_create_config"),
     path("task_config/<str:task_config_id>", TaskConfigManagementView.as_view(), name="task_config_management"),
 
-    path("math_function", MathFunctionsView.as_view(), name="get_available_functions_create_function")
+    path("math_function", MathFunctionsView.as_view(), name="get_available_functions_create_function"),
+    path("multiple_launch", MultipleLaunchView.as_view(), name="multiple_launch_experiments")
 ]

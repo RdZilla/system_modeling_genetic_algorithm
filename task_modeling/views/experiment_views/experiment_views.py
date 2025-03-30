@@ -1,9 +1,13 @@
 import os
 import shutil
 
+from django.contrib.postgres.aggregates import StringAgg
+from django.contrib.postgres.search import SearchVector, SearchQuery
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.status import is_client_error
 
 from api.responses import bad_request_response, created_response, not_found_response, permission_denied_response, \
     no_content_response, success_response, method_not_allowed_response
@@ -17,6 +21,95 @@ from task_modeling.models import Experiment, Task
 from task_modeling.serializers import ExperimentSerializer
 from task_modeling.utils.start_task import run_task
 
+search_vector = SearchVector(
+    "name",
+    "status",
+    "task_status",
+    "task_celery_task_id",
+    "task_config_name",
+)
+
+FILTER_DICT = {
+    "search": lambda filter_value: Q(search=SearchQuery(filter_value, search_type="websearch")),
+    "experimentStatus[]": lambda filter_value: Q(status__in=filter_value),
+    "taskStatus[]": lambda filter_value: Q(task__status__in=filter_value),
+    "createdFrom": lambda filter_value: Q(created_at__gte=filter_value),
+    "createdTo": lambda filter_value: Q(created_at__lte=filter_value),
+    "updatedFrom": lambda filter_value: Q(updated_at__gte=filter_value),
+    "updatedTo": lambda filter_value: Q(updated_at__lte=filter_value),
+    "configIds[]": lambda filter_value: Q(task__config__id__in=filter_value),
+}
+
+
+class ExperimentMixin:
+    @staticmethod
+    def start_experiment(experiment: Experiment):
+        tasks = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(
+            experiment=experiment,
+            # status=Task.Action.CREATED
+        )
+
+        if not tasks:
+            experiment_id = experiment.id
+            return not_found_response(f"task with {experiment_id = }")
+
+        # experiment.status = Experiment.Action.STARTED
+        # experiment.save()
+
+        response_list = []
+        error_list = []
+
+        for task in tasks:
+            response = run_task(task)
+            if status.is_client_error(response.status_code):
+                error_list.append({task.id: response.data})
+                continue
+            response_list.append(response.data)
+
+        if error_list:
+            experiment.status = Experiment.Action.ERROR
+            experiment.save()
+            return bad_request_response(error_list)
+        return success_response(response_list)
+
+    @staticmethod
+    def stop_experiment(experiment: Experiment):
+        tasks = Task.objects.select_related(
+            "config", "experiment"
+        ).filter(
+            experiment=experiment,
+            # status=Task.Action.CREATED
+        )
+
+        if not tasks:
+            experiment_id = experiment.id
+            return not_found_response(f"task with {experiment_id = }")
+
+        response_list = []
+        error_list = []
+
+        for task in tasks:
+            celery_task_id = task.celery_task_id
+            if not celery_task_id:
+                error_list.append({task.id: "exist celery task id"})
+                continue
+
+            app.control.revoke(celery_task_id, terminate=True)
+            response_list.append({task.id: "celery task has been cancelled"})
+
+            # task.status = Task.Action.STOPPED
+            # task.save()
+        if error_list:
+            experiment.status = Experiment.Action.ERROR
+            experiment.save()
+            return bad_request_response(error_list)
+
+        # experiment.status = Experiment.Action.STOPPED
+        # experiment.save()
+        return success_response(response_list)
+
 
 class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
     serializer_class = ExperimentSerializer
@@ -26,11 +119,42 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         user_id = user.id
         if not user_id:
             return permission_denied_response()
-        queryset = Experiment.objects.select_related(
+        queryset = Experiment.objects.prefetch_related(
+            "task_set",
+            "task_set__config"
+        ).select_related(
             "user"
         ).filter(
             user=user
-        ).order_by("-created_at")
+        ).annotate(
+            task_status=StringAgg('task__status', delimiter=' '),
+            task_celery_task_id=StringAgg('task__celery_task_id', delimiter=' '),
+            task_config_name=StringAgg('task__config__name', delimiter=' '),
+        ).annotate(
+            search=search_vector
+        ).order_by(
+            "-created_at"
+        )
+        return queryset
+
+    def filter_queryset(self, queryset):
+        list_params = ["experimentStatus[]", "taskStatus[]", "configIds[]"]
+        filter_params = self.request.query_params.lists()
+
+        full_filter = Q()
+        for filters in filter_params:
+            filter_name = filters[0]
+            filter_value = filters[1]
+            if filter_name not in FILTER_DICT:
+                continue
+            if filter_name not in list_params:
+                filter_value = filter_value[0]
+            if not filter_value or (isinstance(filter_value, list) and not filter_value[0]):
+                continue
+
+            filter_q = FILTER_DICT[filter_name](filter_value)
+            full_filter &= filter_q
+        queryset = queryset.filter(full_filter)
         return queryset
 
     @extend_schema(
@@ -44,9 +168,9 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         }
     )
     def get(self, request, *args, **kwargs):
-        experiment_obj = self.get_queryset()
-        if isinstance(experiment_obj, Response):
-            return experiment_obj
+        experiment_qs = self.get_queryset()
+        if isinstance(experiment_qs, Response):
+            return experiment_qs
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
@@ -176,7 +300,7 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
             return bad_request_response(f"Experiment with name='{experiment_name}' already exist")
 
 
-class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
+class ExperimentManagementView(ExperimentMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ExperimentSerializer
 
     def get_object(self):
@@ -229,74 +353,6 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
             return self.stop_experiment(experiment)
 
         return super().get(request, *args, **kwargs)
-
-    @staticmethod
-    def start_experiment(experiment: Experiment):
-        tasks = Task.objects.select_related(
-            "config", "experiment"
-        ).filter(
-            experiment=experiment,
-            # status=Task.Action.CREATED
-        )
-
-        if not tasks:
-            experiment_id = experiment.id
-            return not_found_response(f"task with {experiment_id = }")
-
-        # experiment.status = Experiment.Action.STARTED
-        # experiment.save()
-
-        response_list = []
-        error_list = []
-
-        for task in tasks:
-            response = run_task(task)
-            if status.is_client_error(response.status_code):
-                error_list.append({task.id: response.data})
-                continue
-            response_list.append(response.data)
-
-        if error_list:
-            experiment.status = Experiment.Action.ERROR
-            experiment.save()
-            return bad_request_response(error_list)
-        return success_response(response_list)
-
-    @staticmethod
-    def stop_experiment(experiment: Experiment):
-        tasks = Task.objects.select_related(
-            "config", "experiment"
-        ).filter(
-            experiment=experiment,
-            # status=Task.Action.CREATED
-        )
-
-        if not tasks:
-            experiment_id = experiment.id
-            return not_found_response(f"task with {experiment_id = }")
-
-        response_list = []
-        error_list = []
-
-        for task in tasks:
-            celery_task_id = task.celery_task_id
-            if not celery_task_id:
-                error_list.append({task.id: "exist celery task id"})
-                continue
-
-            app.control.revoke(celery_task_id, terminate=True)
-            response_list.append({task.id: "celery task has been cancelled"})
-
-            # task.status = Task.Action.STOPPED
-            # task.save()
-        if error_list:
-            experiment.status = Experiment.Action.ERROR
-            experiment.save()
-            return bad_request_response(error_list)
-
-        # experiment.status = Experiment.Action.STOPPED
-        # experiment.save()
-        return success_response(response_list)
 
     @extend_schema(
         tags=['Experiments'],
@@ -394,3 +450,33 @@ class ExperimentManagementView(generics.RetrieveUpdateDestroyAPIView):
         experiment.delete()
         tasks_qs.delete()
         return no_content_response(experiment_id)
+
+
+class MultipleLaunchView(ExperimentMixin, generics.GenericAPIView):
+    def get_queryset(self):
+        experiment_ids = self.request.data.get("experiment_ids", [])
+        # status_filter = Q(
+        #     ~Q(status=Experiment.Action.STARTED) |
+        #     ~Q(status=Experiment.Action.FINISHED) |
+        #     ~Q(status=Experiment.Action.DELETED)
+        # )
+        qs = Experiment.objects.filter(id__in=experiment_ids)
+        # qs = qs.filter(status_filter)
+        return qs
+
+    def post(self, request, *args, **kwargs):
+        response_list = []
+
+        qs = self.get_queryset()
+        for experiment in qs:
+            experiment_id = experiment.id
+            experiment_name = experiment.name
+
+            response = self.start_experiment(experiment)
+            status_code = response.status_code
+            if is_client_error(status_code):
+                response_list.append(f"[{experiment_id}|{experiment_name}] - Ошибка запуска")
+                continue
+            response_list.append(f"[{experiment_id}|{experiment_name}] - успешно запущен")
+
+        return success_response(response_list)
