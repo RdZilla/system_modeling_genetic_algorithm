@@ -6,23 +6,42 @@ import matplotlib.pyplot as plt
 from api.utils.custom_logger import RESULT_KEY
 
 
-def save_results_csv(results, filename="results/output.csv"):
-    """Сохранение результатов в CSV"""
-    with open(filename, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Generation", "Best Fitness"])
-        for gen, fitness in results.items():
-            writer.writerow([gen, fitness])
+def save_results_to_csv(results, filename="results/fitness_results.csv", only_best_result=False):
+    """Сохранение результатов в CSV файл"""
+    if only_best_result:
+        result_data = results.get(RESULT_KEY)
+
+        results = {}
+        if result_data:
+            results[RESULT_KEY] = result_data
+
+    if not results:
+        return "Невозможно выгрузить данные"
+
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Process", "Generation", "Min Fitness", "Max Fitness", "Avg Fitness", "Timestamp"])
+
+        for process, data in results.items():
+            for entry in data:
+                writer.writerow([
+                    process,
+                    entry.get("generation"),
+                    entry.get("min_fitness"),
+                    entry.get("max_fitness"),
+                    entry.get("avg_fitness"),
+                    entry.get("timestamp")
+                ])
 
 
-def plot_results(results, filename="results/fitness_plot.png", only_result=False):
+def plot_results(results, filename="results/fitness_plot.png", only_best_result=False):
     """Построение графика изменения значений фитнес-функции"""
     plt.figure(figsize=(10, 5))
 
-    if only_result:
+    if only_best_result:
         result_data = results.get(RESULT_KEY)
 
-        results = []
+        results = {}
         if result_data:
             results[RESULT_KEY] = result_data
 
@@ -30,10 +49,10 @@ def plot_results(results, filename="results/fitness_plot.png", only_result=False
         return "Невозможно выгрузить данные"
 
     for process, data in results.items():
-        generations = [entry["generation"] for entry in data]
-        min_fitness = [entry["min_fitness"] for entry in data]
-        max_fitness = [entry["max_fitness"] for entry in data]
-        avg_fitness = [entry["avg_fitness"] for entry in data]
+        generations = [entry.get("generation") for entry in data]
+        min_fitness = [entry.get("min_fitness") for entry in data]
+        max_fitness = [entry.get("max_fitness") for entry in data]
+        avg_fitness = [entry.get("avg_fitness") for entry in data]
 
         plt.plot(generations, min_fitness, marker='o', linestyle='-', label=f'{process} Min Fitness')
         plt.plot(generations, max_fitness, marker='o', linestyle='-', label=f'{process} Max Fitness')

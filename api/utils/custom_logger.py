@@ -9,7 +9,9 @@ RESULT_ROOT = settings.RESULT_ROOT
 
 TEXT_LOG_FILE_NAME = "text_log.log"
 JSON_LOG_FILE_NAME = "json_log.json"
-CSV_LOG_FILE_NAME = "csv_log.json"
+
+CSV_RESULT_FILE_NAME = "best_csv.csv"
+ALL_CSV_RESULTS_FILE_NAME = "all_worker_csv.csv"
 
 BEST_PLOT_FILE_NAME = "best_plot.png"
 ALL_RESULTS_PLOT_FILE_NAME = "all_worker_plot.png"
