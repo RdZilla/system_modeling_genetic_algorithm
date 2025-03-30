@@ -8,6 +8,7 @@
 *.json
 *.csv
 *.png
+*.pdf
 *.tmp
 
 /static

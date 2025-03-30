@@ -8,11 +8,17 @@ from modeling_system_backend import settings
 RESULT_ROOT = settings.RESULT_ROOT
 
 TEXT_LOG_FILE_NAME = "text_log.log"
-JSON_LOG_FILE_NAME = "json_log.json"
-CSV_LOG_FILE_NAME = "csv_log.json"
+
+JSON_RESULT_FILE_NAME = "best_json.json"
+ALL_JSON_RESULTS_FILE_NAME = "json_log.json"
+
+CSV_RESULT_FILE_NAME = "best_csv.csv"
+ALL_CSV_RESULTS_FILE_NAME = "all_worker_csv.csv"
 
 BEST_PLOT_FILE_NAME = "best_plot.png"
 ALL_RESULTS_PLOT_FILE_NAME = "all_worker_plot.png"
+
+PDF_RESULTS_FILE_NAME = "export_file.pdf"
 
 RESULT_KEY = "results"
 
@@ -73,7 +79,7 @@ class ExperimentLogger:
         logger_filepath = logger.handlers[0].baseFilename
         results_folder, _ = os.path.split(logger_filepath)
 
-        json_logger = os.path.join(results_folder, JSON_LOG_FILE_NAME)
+        json_logger = os.path.join(results_folder, ALL_JSON_RESULTS_FILE_NAME)
         if os.path.exists(json_logger):
             os.remove(json_logger)
         files_in_folder = os.listdir(results_folder)
