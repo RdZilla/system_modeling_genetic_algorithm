@@ -21,7 +21,13 @@ class TaskConfigView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         user_id = user.id
         if not user_id:
             return permission_denied_response()
-        queryset = TaskConfig.objects.select_related("user").filter(user=user)
+        queryset = TaskConfig.objects.select_related(
+            "user"
+        ).filter(
+            user=user
+        ).order_by(
+            "-created_at"
+        )
         return queryset
 
     @extend_schema(
@@ -164,7 +170,7 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
         config = request.data.get("config", {})
         validate_result = PrepareTaskConfigMixin.validate_task_config(task_name, config,
-                                                                   partial_check=False)
+                                                                      partial_check=False)
         if validate_result:
             return bad_request_response(f"Ошибка валидации конфигурации: {validate_result}")
 
@@ -172,7 +178,6 @@ class TaskConfigManagementView(generics.RetrieveUpdateDestroyAPIView):
         task_config_obj = TaskConfig.objects.filter(config=config, user=user).first()
         if task_config_obj:
             return bad_request_response("Конфигурация задачи уже существует")
-
 
         task_config.name = task_name
         task_config.config = config

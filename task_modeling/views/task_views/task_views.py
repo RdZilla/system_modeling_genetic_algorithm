@@ -84,9 +84,9 @@ class TaskView(generics.ListCreateAPIView):
         }
     )
     def get(self, request, *args, **kwargs):
-        task_obj = self.get_queryset()
-        if isinstance(task_obj, Response):
-            return task_obj
+        task_qs = self.get_queryset()
+        if isinstance(task_qs, Response):
+            return task_qs
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
@@ -385,3 +385,25 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
             response = FileResponse(open(pdf_path, 'rb'), content_type="application/pdf", filename="pdf_results.pdf")
             response['Content-Disposition'] = 'attachment; filename="pdf_results.pdf"'
         return response
+
+
+class StartedTaskView(generics.ListCreateAPIView):
+    serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        user_id = user.id
+        if not user_id:
+            return permission_denied_response()
+
+        qs = Task.objects.filter(
+            experiment__user=user,
+            status=Task.Action.STARTED
+        )
+        return qs
+
+    def get(self, request, *args, **kwargs):
+        task_qs = self.get_queryset()
+        if isinstance(task_qs, Response):
+            return task_qs
+        return super().get(request, *args, **kwargs)
