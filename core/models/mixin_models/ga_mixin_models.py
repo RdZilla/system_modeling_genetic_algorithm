@@ -123,13 +123,13 @@ class GeneticAlgorithmMixin(LogResultMixin):
         logger: Объект ExperimentLogger для логирования процесса
         """
         # Параметры генетического алгоритма
-        self.population_size = population_size
-        self.max_generations = max_generations
+        self.population_size = int(population_size)
+        self.max_generations = int(max_generations)
 
-        self.mutation_rate = mutation_rate
-        self.crossover_rate = crossover_rate
+        self.mutation_rate = float(mutation_rate)
+        self.crossover_rate = float(crossover_rate)
 
-        self.num_workers = num_workers or cpu_count()
+        self.num_workers = int(num_workers) or cpu_count()
 
         # Пользовательские функции
         self.adaptation_function = adaptation_function

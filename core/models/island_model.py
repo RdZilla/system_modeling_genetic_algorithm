@@ -75,9 +75,9 @@ class IslandGA(GeneticAlgorithmMixin):
                          termination_kwargs,
                          logger)
 
-        self.num_islands = num_islands
-        self.migration_interval = migration_interval
-        self.migration_rate = migration_rate
+        self.num_islands = int(num_islands)
+        self.migration_interval = int(migration_interval)
+        self.migration_rate = float(migration_rate)
 
         self.islands = None
         self.generation = None
