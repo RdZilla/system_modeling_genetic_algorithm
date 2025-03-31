@@ -5,6 +5,7 @@ from task_modeling.views.experiment_views.experiment_views import ExperimentView
 from task_modeling.views.task_config_views.task_config_views import TaskConfigView, TaskConfigManagementView
 from task_modeling.views.math_functions.math_functions_view import MathFunctionsView, GetSupportedAlgorithmView
 from task_modeling.views.task_views.task_views import TaskView, TaskManagementView, ExportResult
+from task_modeling.views.translation_view import TranslationView
 
 urlpatterns = [
     path("experiment", ExperimentView.as_view(), name="list_experiments_create_experiment"),
@@ -18,5 +19,6 @@ urlpatterns = [
 
     path("math_function", MathFunctionsView.as_view(), name="get_available_functions_create_function"),
     path("get_supported_algorithms", GetSupportedAlgorithmView.as_view(), name="get_available_functions_create_function"),
-    path("multiple_launch", MultipleLaunchView.as_view(), name="multiple_launch_experiments")
+    path("multiple_launch", MultipleLaunchView.as_view(), name="multiple_launch_experiments"),
+    path("translations", TranslationView.as_view(), name="translations")
 ]
