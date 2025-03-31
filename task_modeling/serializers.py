@@ -22,6 +22,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     config = serializers.SerializerMethodField()
+    experiment_id = serializers.IntegerField(source="experiment.id")
 
     class Meta:
         model = Task
