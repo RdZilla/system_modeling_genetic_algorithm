@@ -1,6 +1,7 @@
 import os
 import shutil
 
+from django.contrib.auth import get_user_model
 from django.contrib.postgres.aggregates import StringAgg
 from django.contrib.postgres.search import SearchVector, SearchQuery
 from django.db.models import Q
@@ -20,6 +21,8 @@ from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 from task_modeling.models import Experiment, Task
 from task_modeling.serializers import ExperimentSerializer
 from task_modeling.utils.start_task import run_task
+
+User = get_user_model()
 
 search_vector = SearchVector(
     "name",
@@ -252,14 +255,14 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
         experiment_name = request.data.get("name", None)
         configs = request.data.get("configs", [])
 
-        validate_response = self.validate_experiment_data(experiment_name)
-        if isinstance(validate_response, Response):
-            return validate_response
-
         user = self.request.user
         user_id = user.id
         if not user_id:
             return permission_denied_response()
+
+        validate_response = self.validate_experiment_data(experiment_name, user)
+        if isinstance(validate_response, Response):
+            return validate_response
 
         error_task_configs, existing_configs, created_configs = self.get_or_create_task_config(configs, user)
         if error_task_configs:
@@ -283,19 +286,21 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
     @staticmethod
     def validate_experiment_data(
             experiment_name: (str | None),
+            user: User,
     ) -> (Response | None):
         """
         Validation of input parameters when creating an experiment.\n
         if the function returns None, it means that the validation was successful.\n
         if the function returns any kind of Response, it means that the validation passed with errors.
         :param experiment_name: name of the future experiments
+        :param user: user object
         :return: Error response
         """
         if not experiment_name:
             error_text = "Название эксперимента должно быть заполнено"
             return bad_request_response(error_text)
 
-        exist_experiment = Experiment.objects.filter(name=experiment_name)
+        exist_experiment = Experiment.objects.filter(name=experiment_name, user=user)
         if exist_experiment:
             return bad_request_response(f"Experiment with name='{experiment_name}' already exist")
 
