@@ -6,6 +6,7 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    email_code = serializers.CharField(max_length=6, write_only=True)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     confirm_password = serializers.CharField(max_length=68, min_length=6, write_only=True)
 
@@ -37,3 +38,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['email'] = user.email
         return token
+
+
+class SendCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()

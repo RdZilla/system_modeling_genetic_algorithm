@@ -387,7 +387,7 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
         return response
 
 
-class StartedTaskView(generics.ListCreateAPIView):
+class StartedTaskView(generics.ListAPIView):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
@@ -402,6 +402,16 @@ class StartedTaskView(generics.ListCreateAPIView):
         )
         return qs
 
+    @extend_schema(
+        tags=["Tasks"],
+        summary="Get list of started tasks",
+        description="Get list of started tasks",
+        responses={
+            status.HTTP_200_OK: TaskSerializer,
+            **SCHEMA_GET_POST_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
+        }
+    )
     def get(self, request, *args, **kwargs):
         task_qs = self.get_queryset()
         if isinstance(task_qs, Response):
