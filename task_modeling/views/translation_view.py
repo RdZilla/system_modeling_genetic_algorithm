@@ -1,8 +1,21 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from api.statuses import SCHEMA_GET_POST_STATUSES, SCHEMA_PERMISSION_DENIED
+
 
 class TranslationView(generics.GenericAPIView):
+    @extend_schema(
+        tags=["API"],
+        summary="Get list of translations for attrs",
+        description="Get list of translations for attrs",
+        responses={
+            status.HTTP_200_OK: dict(),
+            **SCHEMA_GET_POST_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
+        }
+    )
     def get(self, request, *args, **kwargs):
         translations = {
             "created": 'Создан',

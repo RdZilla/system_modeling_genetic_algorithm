@@ -189,24 +189,24 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                             "name": "master_worker_config_1",
                             "config": {
                                 "algorithm": "master_worker",
-                                "population_size": 100,
-                                "max_generations": 50,
-                                "mutation_rate": 0.05,
-                                "crossover_rate": 0.75,
-                                "num_workers": 3,
+                                "population_size": "100",
+                                "max_generations": "50",
+                                "mutation_rate": "0.05",
+                                "crossover_rate": "0.75",
+                                "num_workers": "3",
                                 "crossover_function": "single_point_crossover",
                                 "crossover_kwargs": {},
                                 "fitness_function": "rastrigin_fitness",
                                 "fitness_kwargs": {},
                                 "initialize_population_function": "random_init",
                                 "initialize_population_kwargs": {
-                                    "chrom_length": 10,
+                                    "chrom_length": "10",
                                 },
                                 "mutation_function": "bitwise_mutation",
                                 "mutation_kwargs": {},
                                 "selection_function": "tournament_selection",
                                 "selection_kwargs": {
-                                    "tournament_size": 3,
+                                    "tournament_size": "3",
                                     "min_max_rule": "min",
                                 },
                             }
@@ -215,29 +215,29 @@ class ExperimentView(generics.ListCreateAPIView, PrepareTaskConfigMixin):
                             "name": "island_model_config_1",
                             "config": {
                                 "algorithm": "island_model",
-                                "population_size": 100,
-                                "max_generations": 50,
-                                "mutation_rate": 0.05,
-                                "crossover_rate": 0.75,
-                                "num_workers": 3,
+                                "population_size": "100",
+                                "max_generations": "50",
+                                "mutation_rate": "0.05",
+                                "crossover_rate": "0.75",
+                                "num_workers": "3",
                                 "crossover_function": "single_point_crossover",
                                 "crossover_kwargs": {},
                                 "fitness_function": "rastrigin_fitness",
                                 "fitness_kwargs": {},
                                 "initialize_population_function": "random_init",
                                 "initialize_population_kwargs": {
-                                    "chrom_length": 10,
+                                    "chrom_length": "10",
                                 },
                                 "mutation_function": "bitwise_mutation",
                                 "mutation_kwargs": {},
                                 "selection_function": "tournament_selection",
                                 "selection_kwargs": {
-                                    "tournament_size": 3,
+                                    "tournament_size": "3",
                                     "min_max_rule": "min",
                                 },
-                                "num_islands": 3,
-                                "migration_interval": 5,
-                                "migration_rate": 0.5
+                                "num_islands": "3",
+                                "migration_interval": "5",
+                                "migration_rate": "0.5"
                             }
                         },
                     ]
@@ -469,6 +469,16 @@ class MultipleLaunchView(ExperimentMixin, generics.GenericAPIView):
         # qs = qs.filter(status_filter)
         return qs
 
+    @extend_schema(
+        tags=["Experiments"],
+        summary="Start list of experiments",
+        description="Start list of experiments",
+        responses={
+            status.HTTP_200_OK: ExperimentSerializer,
+            **SCHEMA_GET_POST_STATUSES,
+            **SCHEMA_PERMISSION_DENIED
+        }
+    )
     def post(self, request, *args, **kwargs):
         response_list = []
 
