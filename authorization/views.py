@@ -89,7 +89,13 @@ class SendCodeView(generics.GenericAPIView):
         verification_code = self.generate_code()
 
         subject = 'Подтверждение Email'
-        message = render_to_string("email_template.html", {"confirmation_code": verification_code})
+
+        site_host = settings.SITE_HOST
+        message_context = {
+            "confirmation_code": verification_code,
+            "site_host": site_host
+        }
+        message = render_to_string("email_template.html", context=message_context)
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [user_email]
 
@@ -97,6 +103,7 @@ class SendCodeView(generics.GenericAPIView):
         confirm_email.content_subtype = "html"
         try:
             confirm_email.send()
+            True
         except BaseException:
             return "Ошибка при отправке кода"
 

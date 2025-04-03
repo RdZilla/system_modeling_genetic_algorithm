@@ -4,12 +4,12 @@ from datetime import timedelta
 
 class EmailVerificationCode(models.Model):
     email = models.EmailField()
-    code = models.CharField(max_length=6)  # например, 6-значный код
+    code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_not_expired(self):
-        """Проверка, истек ли срок действия кода (10 минут)."""
-        expiration_time = self.created_at + timedelta(minutes=5)  # Время истечения кода
+        """Проверка, истек ли срок действия кода (5 минут)."""
+        expiration_time = self.created_at + timedelta(minutes=5)
         remaining_time = (expiration_time - timezone.now()).total_seconds()
 
         return max(0, int(remaining_time)) if remaining_time > 0 else False

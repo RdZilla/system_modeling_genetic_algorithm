@@ -1,5 +1,3 @@
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from rest_framework import generics, status
 from rest_framework.response import Response
