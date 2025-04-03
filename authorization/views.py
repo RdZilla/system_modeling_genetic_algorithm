@@ -103,7 +103,6 @@ class SendCodeView(generics.GenericAPIView):
         confirm_email.content_subtype = "html"
         try:
             confirm_email.send()
-            True
         except BaseException:
             return "Ошибка при отправке кода"
 
