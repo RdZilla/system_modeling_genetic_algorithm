@@ -1,12 +1,17 @@
 from django.contrib import admin
 
 from task_modeling.models import Task, TaskConfig, Experiment
+from task_modeling.views.experiment_views.experiment_views import ExperimentManagementView
 from task_modeling.views.task_views.task_views import TaskManagementView
 
 
 @admin.action(description="Запустить выбранные эксперименты")
 def run_experiment_admin(modeladmin, request, queryset):
-    return
+    list_response = []
+    for experiment in queryset:
+        response = ExperimentManagementView.start_experiment(experiment)
+        list_response.append(response)
+    return list_response
 
 
 @admin.register(Experiment)
@@ -28,7 +33,7 @@ class ExperimentAdmin(admin.ModelAdmin):
 def run_task_admin(modeladmin, request, queryset):
     list_response = []
     for task in queryset:
-        response = TaskManagementView.run(task)
+        response = TaskManagementView.start_task(task)
         list_response.append(response)
     return list_response
 

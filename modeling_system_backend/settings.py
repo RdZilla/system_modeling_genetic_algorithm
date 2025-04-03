@@ -181,11 +181,10 @@ LOGGING = {
     }
 }
 
-
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
 
-CACHES  = {
+CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}"
@@ -199,3 +198,17 @@ CELERY_WORKER_CONCURRENCY = 4
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_RESULT_SERIALIZER = "json"
+CELERYD_POOL = "prefork"
+
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND")
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_PORT = os.environ.get("EMAIL_PORT")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False").lower() == 'true'
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() == 'true'
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_TO_EMAIL = EMAIL_HOST_USER
+
+SITE_HOST = os.environ.get("SITE_HOST", "http://localhost")

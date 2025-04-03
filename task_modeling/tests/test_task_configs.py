@@ -1,7 +1,7 @@
 import json
 import pytest
+from django.contrib.auth import get_user_model
 
-from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
@@ -9,6 +9,8 @@ from rest_framework.test import APIClient
 from task_modeling.models import TaskConfig
 from task_modeling.serializers import TaskConfigSerializer
 from task_modeling.tests.test_data.data_for_testing import TEST_TASK_CONFIG
+
+User = get_user_model()
 
 
 @pytest.fixture
@@ -47,7 +49,6 @@ def test_get_all_task_configs(client, setup_task_configs):
     results_data = response.data.get("results")
     assert len(setup_task_configs) == len(results_data)
 
-    # Проверяем, что каждая запись соответствует сериализованным данным
     for number, task_config in enumerate(setup_task_configs):
         expected_data = TaskConfigSerializer(instance=task_config).data
         assert results_data[number]["name"] == expected_data["name"]
@@ -62,7 +63,6 @@ def test_delete_task_config(client, setup_task_configs):
         response = client.delete(reverse("task_config_management", args=[task_config_id]))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    # Проверяем, что в БД больше нет этих объектов
     assert TaskConfig.objects.count() == 0
 
 
@@ -76,7 +76,6 @@ def test_post_task_config(client, clean_db):
     )
     assert response.status_code == status.HTTP_201_CREATED
 
-    # Проверяем, что объект действительно появился в БД
     assert TaskConfig.objects.count() == 1
     created_task_config = TaskConfig.objects.first()
     assert created_task_config.name == TEST_TASK_CONFIG["name"]
@@ -86,7 +85,7 @@ def test_post_task_config(client, clean_db):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.order(4)
 def test_get_task_config_by_id(client, setup_task_configs):
-    task_config = setup_task_configs[0]  # Берем первый объект
+    task_config = setup_task_configs[0]
     response = client.get(reverse("task_config_management", args=[task_config.id]))
 
     assert response.status_code == status.HTTP_200_OK
@@ -96,7 +95,7 @@ def test_get_task_config_by_id(client, setup_task_configs):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.order(5)
 def test_get_nonexistent_task_config(client):
-    response = client.get(reverse("task_config_management", args=[99999]))  # Несуществующий ID
+    response = client.get(reverse("task_config_management", args=[9999999999]))  # Несуществующий ID
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -104,7 +103,7 @@ def test_get_nonexistent_task_config(client):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.order(6)
 def test_delete_nonexistent_task_config(client):
-    response = client.delete(reverse("task_config_management", args=[99999]))  # Несуществующий ID
+    response = client.delete(reverse("task_config_management", args=[9999999999]))  # Несуществующий ID
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -130,8 +129,8 @@ def test_post_invalid_task_config(client):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.order(8)
 def test_patch_task_config(client, setup_task_configs):
-    task_config = setup_task_configs[0]  # Берем первый объект
-    update_data = {"name": "updated_name"}  # Меняем только имя
+    task_config = setup_task_configs[0]
+    update_data = {"name": "updated_name"}
 
     response = client.patch(
         reverse("task_config_management", args=[task_config.id]),
@@ -147,7 +146,7 @@ def test_patch_task_config(client, setup_task_configs):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.order(9)
 def test_put_task_config(client, setup_task_configs):
-    task_config = setup_task_configs[0]  # Берем первый объект
+    task_config = setup_task_configs[0]
     new_data = {
         "name": "completely_new_config",
         "config": {

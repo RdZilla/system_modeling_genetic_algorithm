@@ -34,7 +34,7 @@ class TranslationView(generics.GenericAPIView):
             "crossover_rate": 'Вероятность кроссинговера',
             "fitness_kwargs": 'Параметры функции приспособленности',
             "selection_rate": 'Вероятность отбора особей',
-            "migration_rate": 'Частота миграции',
+            "migration_rate": 'Процент популяции для миграции',
             "max_generations": 'Максимальное количество поколений',
             "mutation_kwargs": 'Параметры мутации',
             "population_size": 'Размер популяции',

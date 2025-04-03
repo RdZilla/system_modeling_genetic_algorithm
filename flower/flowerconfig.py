@@ -16,7 +16,7 @@ persistent = True
 
 state_save_interval = 10
 
-basic_auth = [f"{os.environ.get('FLOWER_LOGIN')}:{os.environ.get('FLOWER_PASSWORD')}"]  # Или "user:password"
+basic_auth = [f"{os.environ.get('FLOWER_LOGIN')}:{os.environ.get('FLOWER_PASSWORD')}"]
 url_prefix = os.environ.get("FLOWER_PREFIX")
 
 # Уведомления (например, если хотите Telegram-бота)

@@ -33,7 +33,6 @@ def get_task_folder_name(task_id) -> str:
 def get_logger(experiment_name: str, user_id, task_id):
     """Создаёт и возвращает логгер с динамическим именем файла"""
 
-    # Динамическое имя файла с датой и именем задачи
     user_folder_name = get_user_folder_name(user_id)
     task_folder_name = get_task_folder_name(task_id)
     results_folder_path = os.path.join(RESULT_ROOT, user_folder_name, experiment_name, task_folder_name)
@@ -45,7 +44,6 @@ def get_logger(experiment_name: str, user_id, task_id):
     logger = logging.getLogger('experiment')
     logger.setLevel(logging.DEBUG)
 
-    # Удаляем предыдущие обработчики, чтобы избежать дублирования логов
     if logger.hasHandlers():
         logger.handlers.clear()
 

@@ -1,9 +1,9 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
-from api.responses import bad_request_response
 from api.utils.load_custom_funcs.core_function_utils import SUPPORTED_MODELS_GA
-from core.models.master_worker_model import MasterWorkerGA
 from task_modeling.models import TaskConfig
+
+User = get_user_model()
 
 
 class PrepareTaskConfigMixin:

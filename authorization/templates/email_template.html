@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #3B82F6;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .code {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3B82F6;
+            background: #f3f3f3;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .footer {
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #3B82F6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        Подтверждение Email
+    </div>
+    <div class="content">
+        <p>Здравствуйте!</p>
+        <p>Вы начали процесс регистрации на <a href="{{ site_host }}">сайте</a> системы моделирования параллельных генетических алгоритмов.</p>
+        <p>Для подтверждения email введите следующий код:</p>
+        <div class="code">{{ confirmation_code }}</div>
+        <p>Код действителен в течение 10 минут.</p>
+        <p>Если вы не запрашивали этот код, просто проигнорируйте это письмо.</p>
+    </div>
+    <div class="footer">
+        © 2025 Система моделирования параллельных генетических алгоритмов | <a href="{{ site_host }}">Перейти на сайт</a>
+    </div>
+</div>
+</body>
+</html>
