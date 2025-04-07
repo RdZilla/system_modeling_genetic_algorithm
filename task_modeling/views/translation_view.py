@@ -17,16 +17,20 @@ class TranslationView(generics.GenericAPIView):
         }
     )
     def get(self, request, *args, **kwargs):
-        translations = {
+        statuses = {
             "created": 'Создан',
             "updated": 'Обновлён',
             "started": 'Запущен',
             "finished": 'Завершён',
             "stopped": 'Остановлен',
             "error": 'Ошибка',
+        }
+        name_models = {
             "master_worker": 'Мастер воркер модель',
             "island_model": 'Островная модель',
             "asynchronous_model": 'Асинхронная модель',
+        }
+        task_config = {
             "algorithm": 'Алгоритм',
             "num_islands": 'Количество островов',
             "num_workers": 'Количество рабочих процессов',
@@ -51,5 +55,12 @@ class TranslationView(generics.GenericAPIView):
             "initialize_population_function": 'Функция инициализации популяции',
             "adaptation_function": 'Функция адаптации',
             "adaptation_kwargs": 'Параметры адаптации',
+        }
+
+        translations = {
+            **statuses,
+            **name_models,
+            **task_config,
+
         }
         return Response(translations, status=status.HTTP_200_OK)

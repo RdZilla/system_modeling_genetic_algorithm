@@ -3,6 +3,8 @@ import numpy as np
 
 def adaptive_mutation(self, chromosome):
     """Изменяет вероятность мутации в зависимости от поколения."""
+    _ru_function_name = "Адаптивная вероятность мутации от поколения"
+
     mutation_rate = self.mutation_rate
     generation = self.generation
     max_generations = self.max_generations

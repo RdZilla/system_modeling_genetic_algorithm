@@ -1,6 +1,9 @@
 def arithmetic_crossover(self, parent1, parent2):
     """Выполняет арифметический кроссовер для вещественных значений."""
 
+    _ru_function_name = "Арифметический кроссовер для вещественных значений"
+    _ru_alpha = "Альфа"
+
     alpha = self.crossover_kwargs.get("alpha")
     alpha = float(alpha) if alpha else None
 

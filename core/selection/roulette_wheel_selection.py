@@ -3,6 +3,8 @@ import numpy as np
 
 def roulette_wheel_selection(self):
     """Выполняет селекцию методом рулетки."""
+    _ru_function_name = "Селекция рулеткой"
+
     population = self.population
     fitness = self.fitness
 

@@ -12,6 +12,10 @@ def custom_initialization(self):
     Returns:
         np.ndarray: Массив популяции.
     """
+    _ru_function_name = "Популяция с заранее известными хорошими решениями"
+    _ru_chrom_length = "Длина хромосомы"
+    _ru_known_solutions = "Известные решения"
+
     pop_size = self.population_size
 
     chrom_length = self.initialize_population_kwargs.get("chrom_length")

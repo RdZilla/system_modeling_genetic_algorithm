@@ -5,6 +5,10 @@ from core.selection.roulette_wheel_selection import roulette_wheel_selection
 
 def fitness_sharing_selection(self):
     """Учитывает разнообразие популяции через разделение фитнеса."""
+    _ru_function_name = "Разнообразие популяции через разделение фитнеса"
+    _ru_sigma_share = "порог схожести"
+    _ru_alpha = "Альфа"
+
     population = self.population
     fitness = self.fitness
 

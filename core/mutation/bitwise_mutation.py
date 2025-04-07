@@ -11,6 +11,7 @@ def bitwise_mutation(self, chromosome):
     Returns:
         np.ndarray: Мутировавшая хромосома.
     """
+    _ru_function_name = "Побитовая мутация"
 
     mutation_rate = self.mutation_rate
 

@@ -3,6 +3,9 @@ import numpy as np
 
 def elitism_selection(self):
     """Сохраняет лучших индивидов в популяции."""
+    _ru_function_name = "Элитарная селекция"
+    _ru_elite_size = "Размер элит"
+
     population = self.population
     fitness = self.fitness
 

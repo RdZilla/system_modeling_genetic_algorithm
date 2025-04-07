@@ -3,6 +3,7 @@ import numpy as np
 
 def rank_selection(self):
     """Выполняет ранговую селекцию."""
+    _ru_function_name = "Ранговая селекция"
 
     population = self.population
     fitness = self.fitness

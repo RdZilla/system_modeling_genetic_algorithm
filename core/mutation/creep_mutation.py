@@ -3,6 +3,9 @@ import numpy as np
 
 def creep_mutation(self, chromosome):
     """Выполняет ползучую мутацию для вещественных значений."""
+    _ru_function_name = "Ползучая мутация"
+    _ru_creep_range = "Диапазон"
+
     mutation_rate = self.mutation_rate
 
     creep_range = self.mutation_kwargs.get("creep_range")

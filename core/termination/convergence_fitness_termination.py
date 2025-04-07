@@ -1,8 +1,13 @@
 import numpy as np
 
 
-def convergence_population_termination(self):
+def convergence_fitness_termination(self):
     """Завершается, когда изменения в фитнес функции становятся малыми."""
+    _ru_function_name = "Стагнация фитнес функции"
+    _ru_stagnation_threshold = "Порог застоя"
+    _ru_stagnation_generations = "Количество поколений"
+    _ru_min_max_rule = "Правило min или max"
+
     fitness = self.fitness
     previous_fitness = self.previous_fitness
 
