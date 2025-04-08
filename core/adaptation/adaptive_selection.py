@@ -4,6 +4,7 @@ from core.selection.tournament_selection import tournament_selection
 
 def adaptive_selection(self):
     """Динамическая адаптация стратегии селекции по мере развития поколений."""
+    _ru_function_name = "Адаптивная селекция"
 
     generation = self.generation
     max_generations = self.max_generations

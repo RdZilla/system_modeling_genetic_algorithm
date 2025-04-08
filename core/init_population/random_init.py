@@ -10,7 +10,7 @@ def random_init(self):
     Returns:
         np.ndarray: Массив популяции размером (pop_size, chrom_length).
     """
-    _ru_function_name = "Популяция с равномерным распределением"
+    _ru_function_name = "Случайная инициализация (равномерное распределение)"
     _ru_chrom_length = "Длина хромосомы"
 
     pop_size = self.population_size

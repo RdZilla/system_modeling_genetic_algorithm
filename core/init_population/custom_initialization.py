@@ -14,7 +14,7 @@ def custom_initialization(self):
     """
     _ru_function_name = "Популяция с заранее известными хорошими решениями"
     _ru_chrom_length = "Длина хромосомы"
-    _ru_known_solutions = "Известные решения"
+    _ru_known_solutions = "Предопределённые решения (заранее известные)"
 
     pop_size = self.population_size
 
