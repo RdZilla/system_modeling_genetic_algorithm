@@ -56,9 +56,9 @@ class SendCodeView(generics.GenericAPIView):
         if existing_email:
             return bad_request_response(existing_email)
 
-        is_not_expired = self.is_not_expired(user_email)
-        if is_not_expired:
-            return Response({"wait_time": is_not_expired}, status=status.HTTP_200_OK)
+        is_not_allow_new_code = self.is_not_allow_new_code(user_email)
+        if is_not_allow_new_code:
+            return Response({"wait_time": is_not_allow_new_code}, status=status.HTTP_200_OK)
 
         send_error = self.send_verification_code(user_email)
         if send_error:
@@ -78,10 +78,10 @@ class SendCodeView(generics.GenericAPIView):
         return ''.join(random.choice(characters) for _ in range(length))
 
     @staticmethod
-    def is_not_expired(user_email):
-        existing_code = EmailVerificationCode.objects.filter(email=user_email).first()
-        if existing_code and existing_code.is_not_expired():
-            return existing_code.is_not_expired()
+    def is_not_allow_new_code(user_email):
+        existing_code = EmailVerificationCode.objects.filter(email=user_email).order_by("-created_at").first()
+        if existing_code and existing_code.is_not_allow_new_code():
+            return existing_code.is_not_allow_new_code()
 
     def send_verification_code(self, user_email):
         EmailVerificationCode.clean_expired_codes()
