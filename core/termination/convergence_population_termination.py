@@ -3,6 +3,10 @@ import numpy as np
 
 def convergence_population_termination(self):
     """Завершается, когда изменения в популяции становятся малыми."""
+    _ru_function_name = "Стагнация популяции"
+    _ru_stagnation_threshold = "Порог застоя"
+    _ru_stagnation_generations = "Застой поколений"
+
     population = self.population
     previous_population = self.previous_population
 

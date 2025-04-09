@@ -1,4 +1,5 @@
 import os
+import logging as py_logging
 
 from dotenv import load_dotenv
 
@@ -19,5 +20,6 @@ state_save_interval = 10
 basic_auth = [f"{os.environ.get('FLOWER_LOGIN')}:{os.environ.get('FLOWER_PASSWORD')}"]
 url_prefix = os.environ.get("FLOWER_PREFIX")
 
+py_logging.getLogger("flower.events").setLevel(py_logging.INFO)
 # Уведомления (например, если хотите Telegram-бота)
 # flower_events = True

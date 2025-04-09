@@ -3,6 +3,10 @@ import numpy as np
 
 def blx_alpha_crossover(self, parent1, parent2):
     """Выполняет BLX-α кроссовер для вещественных значений."""
+
+    _ru_function_name = "BLX-α кроссовер для вещественных значений"
+    _ru_alpha = "Альфа"
+
     alpha = self.crossover_kwargs.get("alpha")
     alpha = float(alpha) if alpha else None
 

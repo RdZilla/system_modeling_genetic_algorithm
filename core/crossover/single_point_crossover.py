@@ -11,6 +11,8 @@ def single_point_crossover(self, parent1, parent2):
     Returns:
         tuple: Две дочерние хромосомы.
     """
+    _ru_function_name = "Одноточечный кроссовер"
+
     point = np.random.randint(1, len(parent1))
     child1 = np.concatenate((parent1[:point], parent2[point:]))
     child2 = np.concatenate((parent2[:point], parent1[point:]))

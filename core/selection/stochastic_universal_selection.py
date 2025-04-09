@@ -3,6 +3,9 @@ import numpy as np
 
 def stochastic_universal_selection(self):
     """Выполняет стохастическую универсальную селекцию."""
+    _ru_function_name = "Стохастическая универсальная селекция"
+    _ru_num_selected = "Количество особей"
+
     population = self.population
     fitness = self.fitness
 

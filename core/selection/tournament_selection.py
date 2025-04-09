@@ -10,6 +10,9 @@ def tournament_selection(self):
     Returns:
         np.ndarray: Выбранная хромосома.
     """
+    _ru_function_name = "Турнирная селекция"
+    _ru_tournament_size = "Размер турнира"
+    _ru_min_max_rule = "Правило min или max"
 
     population = self.population
     fitness = self.fitness

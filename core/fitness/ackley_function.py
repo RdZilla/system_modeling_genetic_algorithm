@@ -3,6 +3,8 @@ import numpy as np
 
 def ackley_function(chromosome):
     """Вычисляет значение функции Акермана для заданной хромосомы."""
+    _ru_function_name = "Функция Акермана"
+
     a = 20
     b = 0.2
     c = 2 * np.pi

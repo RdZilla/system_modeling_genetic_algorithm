@@ -10,6 +10,11 @@ def normal_initialization(self):
     Returns:
         np.ndarray: Массив популяции размером (pop_size, chrom_length).
     """
+    _ru_function_name = "Популяция с нормальным распределением"
+    _ru_chrom_length = "Длина хромосомы"
+    _ru_mean = "Среднее значение"
+    _ru_std = "Стандартное отклонение"
+
     pop_size = self.population_size
 
     chrom_length = self.initialize_population_kwargs.get("chrom_length")

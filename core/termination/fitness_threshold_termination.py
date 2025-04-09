@@ -3,6 +3,10 @@ import numpy as np
 
 def fitness_threshold_termination(self):
     """Завершается, когда значение фитнеса достигает порога."""
+    _ru_function_name = "Целевое значение фитнеса"
+    _ru_fitness_threshold = "Целевое значение фитнеса"
+    _ru_min_max_rule = "Правило min или max"
+
     fitness = self.fitness
 
     fitness_threshold = self.termination_kwargs.get("fitness_threshold")

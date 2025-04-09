@@ -49,6 +49,43 @@ def extract_kwargs_params_from_module_path(module_path):
     return list(params)
 
 
+def get_translations_from_function(path_to_func: str) -> dict:
+    # Разбиваем путь на модуль и имя функции
+    *module_parts, func_name = path_to_func.split(".")
+    module_path = ".".join(module_parts)
+
+    # Импортируем модуль
+    module = importlib.import_module(module_path)
+
+    # Получаем саму функцию
+    func = getattr(module, func_name)
+
+    # Получаем исходный код функции
+    source = inspect.getsource(func)
+
+    # Парсим исходный код в AST
+    tree = ast.parse(source)
+
+    # Словарь для переводов
+    translations = {}
+
+    # Проходим по телу функции
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id.startswith("_ru_"):
+                    var_name = target.id[4:]  # убираем '_ru_'
+                    if isinstance(node.value, ast.Str):  # Python < 3.8
+                        translations[var_name] = node.value.s
+                    elif isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):  # Python 3.8+
+                        translations[var_name] = node.value.value
+
+    # Добавим имя функции как ключ
+    translations[func_name] = translations.pop('function_name', func_name)
+
+    return translations
+
+
 def get_functions_with_import_paths(folder_path):
     functions_dict = {}
 
