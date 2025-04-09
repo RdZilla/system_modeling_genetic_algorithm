@@ -14,6 +14,11 @@ class EmailVerificationCode(models.Model):
 
         return max(0, int(remaining_time)) if remaining_time > 0 else False
 
+    def is_not_allow_new_code(self):
+        allow_new_code = self.created_at + timedelta(minutes=1)
+        remaining_time = (allow_new_code - timezone.now()).total_seconds()
+        return max(0, int(remaining_time)) if remaining_time > 0 else False
+
     @classmethod
     def clean_expired_codes(cls):
         """Очищает все истекшие коды подтверждения."""
