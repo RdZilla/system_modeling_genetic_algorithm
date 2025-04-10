@@ -21,5 +21,7 @@ basic_auth = [f"{os.environ.get('FLOWER_LOGIN')}:{os.environ.get('FLOWER_PASSWOR
 url_prefix = os.environ.get("FLOWER_PREFIX")
 
 py_logging.getLogger("flower.events").setLevel(py_logging.INFO)
+
+db = '/data/flower.db'
 # Уведомления (например, если хотите Telegram-бота)
 # flower_events = True

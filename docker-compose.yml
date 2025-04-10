@@ -1,5 +1,6 @@
 volumes:
   pg_data: { }
+  flower_data:
 
 services:
   postgres:
@@ -22,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/celery/Dockerfile
-    command: celery -A modeling_system_backend worker --loglevel=info --logfile=media/logs/celery.log --concurrency=8
+    command: celery -A modeling_system_backend worker --loglevel=debug --logfile=media/logs/celery.log --concurrency=8
     volumes:
       - .:/code
     depends_on:
@@ -35,9 +36,15 @@ services:
       - C_FORCE_ROOT=true
 
   flower:
-    image: mher/flower
+    build:
+      context: .
+      dockerfile: ./docker/celery/Dockerfile
+    command: celery -A modeling_system_backend flower --conf=flowerconfig.py
     ports:
       - "5555:5555"
+    volumes:
+      - ./flower/flowerconfig.py:/code/flowerconfig.py
+      - flower_data:/data
     depends_on:
       - celery
     environment:
