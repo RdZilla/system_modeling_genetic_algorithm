@@ -42,7 +42,7 @@ def run_task_admin(modeladmin, request, queryset):
 class TaskAdmin(admin.ModelAdmin):
     list_select_related = ("experiment", "config")
 
-    list_display = ("id", "status", "config_id", "experiment", "created_at", "experiment_id")
+    list_display = ("id", "status", "config", "config_id", "experiment", "created_at", "experiment_id")
     list_filter = ("status", "experiment_id", "config_id")
     list_per_page = 10
     ordering = ("-created_at",)

@@ -12,33 +12,15 @@ from task_modeling.utils.prepare_task_config import PrepareTaskConfigMixin
 from task_modeling.utils.set_experiment_status import set_experiment_status
 
 
-def get_function_from_string(path: str):
-    """Импортирует функцию по строковому пути."""
-    module_name, function_name = path.rsplit(".", 1)
-    module = importlib.import_module(module_name)
-    return getattr(module, function_name)
-
-
 @shared_task
-def wrapper_run_task(additional_params, ga_params, functions_routes, task_id):
+def wrapper_run_task(additional_params, ga_params, functions_routes):
     algorithm_type = additional_params.get("algorithm_type")
-
     task_config = additional_params.get("task_config")
-    experiment_name = additional_params.get("experiment_name")
-    user_id = additional_params.get("user_id")
-
-    logger = ExperimentLogger(experiment_name, user_id, task_id)
-    logger.set_process_id(0)
+    task_config.update({**functions_routes})
+    task_id = additional_params.get("task_id")
 
     ga = SUPPORTED_MODELS_GA[algorithm_type]
-
-    ga = ga(**ga_params,
-            logger=logger)
-
-    for function_name, function_route in functions_routes.items():
-        ga_function = get_function_from_string(function_route)
-        setattr(ga, function_name, ga_function)
-
+    ga = ga(additional_params, ga_params, functions_routes)
     return ga.run(task_id, task_config)
 
 
@@ -145,7 +127,7 @@ def run_task(task: Task) -> Response:
     set_experiment_status(task, experiment_status)
 
     # wrapper_run_task(additional_params, task_config, functions_routes, task_id)
-    celery_task_id = wrapper_run_task.delay(additional_params, task_config, functions_routes, task_id)
+    celery_task_id = wrapper_run_task.delay(additional_params, task_config, functions_routes)
     task.celery_task_id = celery_task_id
     task.save()
     return success_response(f"Task {task.id} started successfully")
