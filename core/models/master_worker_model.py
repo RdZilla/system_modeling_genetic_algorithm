@@ -1,69 +1,28 @@
-import time
+import logging
+from datetime import datetime
 
 import numpy as np
-# from multiprocessing import Pool
-from billiard.pool import Pool
+from celery import group, shared_task
 
 from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 
 
+@shared_task(bind=True, ignore_result=True)
+def wrapper_fitness_function(self, fitness_function, individual):
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        pass
+
+    fitness_value = fitness_function(individual)
+    return fitness_value
 
 class MasterWorkerGA(GeneticAlgorithmMixin):
     REQUIRED_PARAMS = [
         *GeneticAlgorithmMixin.REQUIRED_PARAMS
     ]
 
-    def __init__(self,
-                 population_size,
-                 max_generations,
+    def __init__(self, additional_params, ga_params, functions_routes):
 
-                 mutation_rate,
-                 crossover_rate,
-
-                 num_workers=None,
-
-                 adaptation_function=None,
-                 adaptation_kwargs=None,
-
-                 crossover_function=None,
-                 crossover_kwargs=None,
-
-                 fitness_function=None,
-                 fitness_kwargs=None,
-
-                 initialize_population_function=None,
-                 initialize_population_kwargs=None,
-
-                 mutation_function=None,
-                 mutation_kwargs=None,
-
-                 selection_function=None,
-                 selection_kwargs=None,
-
-                 termination_function=None,
-                 termination_kwargs=None,
-                 logger=None):
-
-        super().__init__(population_size,
-                         max_generations,
-                         mutation_rate,
-                         crossover_rate,
-                         num_workers,
-                         adaptation_function,
-                         adaptation_kwargs,
-                         crossover_function,
-                         crossover_kwargs,
-                         fitness_function,
-                         fitness_kwargs,
-                         initialize_population_function,
-                         initialize_population_kwargs,
-                         mutation_function,
-                         mutation_kwargs,
-                         selection_function,
-                         selection_kwargs,
-                         termination_function,
-                         termination_kwargs,
-                         logger)
+        super().__init__(additional_params, ga_params, functions_routes)
 
         self.generation = None
 
@@ -76,9 +35,14 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
 
     def evaluate_fitness(self, population):
         """Оценка фитнеса для каждой хромосомы в популяции с использованием Celery."""
-        with Pool(processes=self.num_workers) as pool:
-            fitness_values = pool.map(self.fitness_function, population)
-        return np.array(fitness_values)
+
+        task_group = group(wrapper_fitness_function.s(self.fitness_function, individual) for individual in population)
+        results = task_group.apply().get(timeout=300, disable_sync_subtasks=False)
+        return np.array(results)
+
+        # with Pool(processes=self.num_workers) as pool:
+        #     fitness_values = pool.map(self.fitness_function, population)
+        # return np.array(fitness_values)
 
     def check_termination_conditions(self):
         """Проверка условий завершения алгоритма."""
@@ -136,13 +100,13 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
     def start_calc(self):
         self.population = self.initialize_population_function(self)
         if self.termination_kwargs:
-            self.termination_kwargs["start_time"] = time.time()
+            self.termination_kwargs["start_time"] = datetime.now()
 
         for generation in range(1, self.max_generations + 1):
             self.generation = generation
             process = self.logger.get_process_id()
-            self.logger.merge_logs(process + 1)
             terminate_flag = self.run_generation()
+            self.logger.merge_logs(process + 1)
             if terminate_flag:
                 break
 

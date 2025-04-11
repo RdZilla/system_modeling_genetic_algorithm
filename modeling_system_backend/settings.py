@@ -143,7 +143,7 @@ REST_FRAMEWORK = {
     )
 }
 
-FileHanddler = 'logging.FileHandler'
+FileHandler = 'logging.FileHandler'
 
 LOGGING = {
     'version': 1,
@@ -163,7 +163,7 @@ LOGGING = {
         },
         'common_file': {
             'level': 'DEBUG',
-            'class': FileHanddler,
+            'class': FileHandler,
             'formatter': 'file',
             'filename': os.path.join(LOG_ROOT, "debug.log"),
             'encoding': 'utf-8',
@@ -177,6 +177,18 @@ LOGGING = {
         'common': {
             "level": "DEBUG",
             'handlers': ['console', 'common_file'],
+        },
+        # Логгер для Celery (уровень WARNING)
+        'celery': {
+            'level': 'WARNING',  # Отключаем INFO-логи Celery
+            'handlers': ['console', 'common_file'],
+            'propagate': False,  # Не передаём логи родительским логгерам
+        },
+        # Логгер для задач Celery (если нужно отдельно настроить)
+        'celery.task': {
+            'level': 'WARNING',  # Отключаем логи о выполнении задач
+            'handlers': ['console', 'common_file'],
+            'propagate': False,
         },
     }
 }
@@ -196,9 +208,11 @@ CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 CELERY_WORKER_CONCURRENCY = 4
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["pickle", "json"]
+CELERY_TASK_SERIALIZER = "pickle"
+CELERY_RESULT_SERIALIZER = "pickle"
 CELERYD_POOL = "prefork"
+CELERY_DISABLE_SYNC_SUBTASKS = False
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND")
 EMAIL_HOST = os.environ.get("EMAIL_HOST")

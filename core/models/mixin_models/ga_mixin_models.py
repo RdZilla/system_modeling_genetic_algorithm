@@ -1,12 +1,21 @@
-import time
+import importlib
+from datetime import datetime
 import traceback
 from abc import abstractmethod
 from multiprocessing import cpu_count
 
 import numpy as np
 
+from api.utils.custom_logger import ExperimentLogger
 from task_modeling.models import Task, Experiment
 from task_modeling.utils.set_experiment_status import set_experiment_status
+
+
+def get_function_from_string(path: str):
+    """Импортирует функцию по строковому пути."""
+    module_name, function_name = path.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, function_name)
 
 
 class LogResultMixin:
@@ -42,8 +51,8 @@ class LogResultMixin:
         average_fitness = np.mean(fitness)
         return average_fitness
 
-class GeneticAlgorithmMixin(LogResultMixin):
 
+class GeneticAlgorithmMixin(LogResultMixin):
     REQUIRED_PARAMS = [
         "algorithm",
         "population_size",
@@ -61,35 +70,7 @@ class GeneticAlgorithmMixin(LogResultMixin):
         "selection_function",
     ]
 
-    def __init__(self,
-                 population_size,
-                 max_generations,
-
-                 mutation_rate,
-                 crossover_rate,
-                 num_workers=None,
-
-                 adaptation_function=None,
-                 adaptation_kwargs=None,
-
-                 crossover_function=None,
-                 crossover_kwargs=None,
-
-                 fitness_function=None,
-                 fitness_kwargs=None,
-
-                 initialize_population_function=None,
-                 initialize_population_kwargs=None,
-
-                 mutation_function=None,
-                 mutation_kwargs=None,
-
-                 selection_function=None,
-                 selection_kwargs=None,
-
-                 termination_function=None,
-                 termination_kwargs=None,
-                 logger=None):
+    def __init__(self, additional_params, ga_params, functions_routes):
         """
         population_size: Размер популяции
         max_generations: Максимальное количество поколений
@@ -123,39 +104,45 @@ class GeneticAlgorithmMixin(LogResultMixin):
         logger: Объект ExperimentLogger для логирования процесса
         """
         # Параметры генетического алгоритма
-        self.population_size = int(population_size)
-        self.max_generations = int(max_generations)
+        self.population_size = int(ga_params.get("population_size"))
+        self.max_generations = int(ga_params.get("max_generations"))
 
-        self.mutation_rate = float(mutation_rate)
-        self.crossover_rate = float(crossover_rate)
+        self.mutation_rate = float(ga_params.get("mutation_rate"))
+        self.crossover_rate = float(ga_params.get("crossover_rate"))
 
-        self.num_workers = int(num_workers) or cpu_count()
+        self.num_workers = int(ga_params.get("num_workers")) or cpu_count()
 
         # Пользовательские функции
-        self.adaptation_function = adaptation_function
-        self.adaptation_kwargs = adaptation_kwargs
+        self.adaptation_kwargs = ga_params.get("adaptation_kwargs")
+        self.crossover_kwargs = ga_params.get("crossover_kwargs")
+        self.fitness_kwargs = ga_params.get("fitness_kwargs")
+        self.initialize_population_kwargs = ga_params.get("initialize_population_kwargs")
+        self.mutation_kwargs = ga_params.get("mutation_kwargs")
+        self.selection_kwargs = ga_params.get("selection_kwargs")
+        self.termination_kwargs = ga_params.get("termination_kwargs")
 
-        self.crossover_function = crossover_function
-        self.crossover_kwargs = crossover_kwargs
+        self.adaptation_function = None
+        self.crossover_function = None
+        self.fitness_function = None
+        self.initialize_population_function = None
+        self.mutation_function = None
+        self.selection_function = None
+        self.termination_function = None
+        self.init_class_functions(functions_routes)
 
-        self.fitness_function = fitness_function
-        self.fitness_kwargs = fitness_kwargs
-
-        self.initialize_population_function = initialize_population_function
-        self.initialize_population_kwargs = initialize_population_kwargs
-
-        self.mutation_function = mutation_function
-        self.mutation_kwargs = mutation_kwargs
-
-        self.selection_function = selection_function
-        self.selection_kwargs = selection_kwargs
-
-        self.termination_function = termination_function
-        self.termination_kwargs = termination_kwargs
-
+        experiment_name = additional_params.get("experiment_name")
+        user_id = additional_params.get("user_id")
+        task_id = additional_params.get("task_id")
+        logger = ExperimentLogger(experiment_name, user_id, task_id)
+        logger.set_process_id(0)
         self.logger = logger
 
         self.task_id = None
+
+    def init_class_functions(self, functions_routes):
+        for function_name, function_route in functions_routes.items():
+            ga_function = get_function_from_string(function_route)
+            setattr(self, function_name, ga_function)
 
     @abstractmethod
     def start_calc(self):
@@ -167,7 +154,7 @@ class GeneticAlgorithmMixin(LogResultMixin):
         self.task_id = task_id
 
         status = Task.Action.FINISHED
-        start_time = time.time()
+        start_time = datetime.now()
         self.logger.logger_log.info(f"[{task_id}] || started with config: {task_config}")
         self.logger.logger_log.info(f"[{task_id}] || Start time: {start_time}")
         self.logger.logger_log.debug("")
@@ -184,7 +171,7 @@ class GeneticAlgorithmMixin(LogResultMixin):
 
             status = Task.Action.ERROR
 
-        finish_time = time.time()
+        finish_time = datetime.now()
         self.logger.logger_log.info(f"[{task_id}] || finished with status {status}")
         self.logger.logger_log.info(f"[{task_id}] || Finish time: {finish_time}")
 

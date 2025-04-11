@@ -1,4 +1,4 @@
-import time
+from datetime import datetime, timedelta
 
 
 def time_limit_termination(self):
@@ -12,4 +12,8 @@ def time_limit_termination(self):
 
     start_time = self.termination_kwargs["start_time"]
 
-    return (time.time() - start_time) >= time_limit
+    current_time = datetime.now()
+
+    if current_time >= start_time + timedelta(seconds=time_limit):
+        return True
+    return False

@@ -3,13 +3,15 @@ import random
 
 import numpy as np
 
-# from multiprocessing import Pool
-from billiard.pool import Pool
+from celery import shared_task, group
 
-from api.utils.custom_logger import ExperimentLogger
 from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 from core.models.master_worker_model import MasterWorkerGA
 
+@shared_task(ignore_result=True)
+def wrapper_run_task(island):
+    terminate_flags = island.run_generation()
+    return island, terminate_flags
 
 class IslandGA(GeneticAlgorithmMixin):
     REQUIRED_PARAMS = [
@@ -19,65 +21,16 @@ class IslandGA(GeneticAlgorithmMixin):
         "migration_rate",
     ]
 
-    def __init__(self,
-                 num_islands,
-                 migration_interval,
-                 migration_rate,
+    def __init__(self, additional_params, ga_params, functions_routes):
+        super().__init__(additional_params, ga_params, functions_routes)
 
-                 population_size,
-                 max_generations,
+        self.num_islands = int(ga_params.get("num_islands"))
+        self.migration_interval = int(ga_params.get("migration_interval"))
+        self.migration_rate = float(ga_params.get("migration_rate"))
 
-                 mutation_rate,
-                 crossover_rate,
-
-                 num_workers=None,
-
-                 adaptation_function=None,
-                 adaptation_kwargs=None,
-
-                 crossover_function=None,
-                 crossover_kwargs=None,
-
-                 fitness_function=None,
-                 fitness_kwargs=None,
-
-                 initialize_population_function=None,
-                 initialize_population_kwargs=None,
-
-                 mutation_function=None,
-                 mutation_kwargs=None,
-
-                 selection_function=None,
-                 selection_kwargs=None,
-
-                 termination_function=None,
-                 termination_kwargs=None,
-                 logger=None):
-
-        super().__init__(population_size,
-                         max_generations,
-                         mutation_rate,
-                         crossover_rate,
-                         num_workers,
-                         adaptation_function,
-                         adaptation_kwargs,
-                         crossover_function,
-                         crossover_kwargs,
-                         fitness_function,
-                         fitness_kwargs,
-                         initialize_population_function,
-                         initialize_population_kwargs,
-                         mutation_function,
-                         mutation_kwargs,
-                         selection_function,
-                         selection_kwargs,
-                         termination_function,
-                         termination_kwargs,
-                         logger)
-
-        self.num_islands = int(num_islands)
-        self.migration_interval = int(migration_interval)
-        self.migration_rate = float(migration_rate)
+        self.additional_params = additional_params
+        self.ga_params = ga_params
+        self.functions_routes = functions_routes
 
         self.islands = None
         self.generation = None
@@ -118,8 +71,17 @@ class IslandGA(GeneticAlgorithmMixin):
             for island in self.islands:
                 island.generation = generation
 
-            with Pool(self.num_workers) as pool:
-                terminate_flags = pool.starmap(MasterWorkerGA.run_generation, [(island,) for island in self.islands])
+            task_group = group(wrapper_run_task.s(island) for island in self.islands)
+
+            # Запускаем группу задач и ждем их завершения
+            results = task_group.apply().get(timeout=300, disable_sync_subtasks=False)
+
+            # Обрабатываем результаты
+            terminate_flags = []
+            for idx, (island_result, terminate_flag) in enumerate(results):
+                self.islands[idx] = island_result
+                terminate_flags.append(terminate_flag)
+
             self.logger.merge_logs(self.num_islands)
 
             self.logger.logger_log.info(f"[{self.task_id}] || {terminate_flags = }")
@@ -136,43 +98,8 @@ class IslandGA(GeneticAlgorithmMixin):
     def init_islands(self):
         self.islands = []
         for num_island in range(self.num_islands):
-            experiment_name = self.logger.experiment_name
-            user_id = self.logger.user_id
-            task_id = self.logger.task_id
-            logger = ExperimentLogger(experiment_name, user_id, task_id)
-            logger.set_process_id(num_island)
-
-            island = MasterWorkerGA(
-                self.population_size,
-                self.max_generations,
-
-                self.mutation_rate,
-                self.crossover_rate,
-
-                self.num_workers,
-
-                self.adaptation_function,
-                self.adaptation_kwargs,
-
-                self.crossover_function,
-                self.crossover_kwargs,
-
-                self.fitness_function,
-                self.fitness_kwargs,
-
-                self.initialize_population_function,
-                self.initialize_population_kwargs,
-
-                self.mutation_function,
-                self.mutation_kwargs,
-
-                self.selection_function,
-                self.selection_kwargs,
-
-                self.termination_function,
-                self.termination_kwargs,
-                logger
-            )
+            island = MasterWorkerGA(self.additional_params, self.ga_params, self.functions_routes)
+            island.logger.set_process_id(num_island)
             island.population = self.initialize_population_function(self)
             island.task_id = self.task_id
             self.islands.append(island)

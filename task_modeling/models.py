@@ -58,7 +58,7 @@ class TaskConfig(models.Model):
                              help_text="Пользователь, создавший конфигурацию")
 
     def __str__(self):
-        return f"Config id: {self.id} by {self.user.username}"
+        return f"Config id: {self.id} {self.name} by {self.user.username}"
 
     class Meta:
         verbose_name = "Конфигурация задачи"
