@@ -57,14 +57,14 @@ def check_usability_function(algorithm_type, functions_params, functions_mapping
                 return bad_request_response(f"Unsupported {function_type =}")
 
         ga_model = SUPPORTED_MODELS_GA[algorithm_type]
-        if function_type not in ga_model.REQUIRED_PARAMS:
-            continue
         function_route = function_mapping.get(function_name, None)
 
         if not function_route:
-            task.status = Task.Action.ERROR
-            task.save()
-            return bad_request_response(f"Invalid {function_type} function: {function_name} not found")
+            if function_type in ga_model.REQUIRED_PARAMS:
+                task.status = Task.Action.ERROR
+                task.save()
+                return bad_request_response(f"Invalid {function_type} function: {function_name} not found")
+            continue
 
         functions_routes[function_type] = function_route
 

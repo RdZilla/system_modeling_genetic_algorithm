@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 import numpy as np
@@ -7,11 +6,8 @@ from celery import group, shared_task
 from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 
 
-@shared_task(bind=True, ignore_result=True)
-def wrapper_fitness_function(self, fitness_function, individual):
-    def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        pass
-
+@shared_task
+def wrapper_fitness_function(fitness_function, individual):
     fitness_value = fitness_function(individual)
     return fitness_value
 
