@@ -346,13 +346,19 @@ class ExportResult(TaskMixin, generics.GenericAPIView):
 
     def get_final_result_pdf(self, result_path):
         json_path = os.path.join(result_path, ALL_JSON_RESULTS_FILE_NAME)
+        with open(json_path, "r") as json_file:
+            result_dict = json.load(json_file)
+        plot_path = os.path.join(result_path, ALL_RESULTS_PLOT_FILE_NAME)
+        not_valid = plot_results(result_dict, plot_path, only_best_result=False)
+        if not_valid:
+            return bad_request_response(not_valid)
 
         file_name = PDF_RESULTS_FILE_NAME
         with open(json_path, "r") as json_file:
             result_dict = json.load(json_file)
         pdf_path = os.path.join(result_path, file_name)
 
-        not_valid = save_results_to_pdf(result_dict, pdf_path)
+        not_valid = save_results_to_pdf(result_dict, plot_path, pdf_path)
         if not_valid:
             return bad_request_response(not_valid)
         return self.get_pdf_response(pdf_path)

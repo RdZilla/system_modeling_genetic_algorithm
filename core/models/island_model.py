@@ -1,5 +1,6 @@
 import copy
 import random
+from datetime import datetime
 
 import numpy as np
 
@@ -8,7 +9,7 @@ from celery import shared_task, group
 from core.models.mixin_models.ga_mixin_models import GeneticAlgorithmMixin
 from core.models.master_worker_model import MasterWorkerGA
 
-@shared_task(ignore_result=True)
+@shared_task
 def wrapper_run_task(island):
     terminate_flags = island.run_generation()
     return island, terminate_flags
@@ -96,12 +97,16 @@ class IslandGA(GeneticAlgorithmMixin):
                 self.logger.logger_log.info(f"[{self.task_id}] || Migration success")
 
     def init_islands(self):
+        start_time = datetime.now()
+
         self.islands = []
         for num_island in range(self.num_islands):
             island = MasterWorkerGA(self.additional_params, self.ga_params, self.functions_routes)
             island.logger.set_process_id(num_island)
             island.population = self.initialize_population_function(self)
             island.task_id = self.task_id
+            if self.termination_kwargs:
+                island.termination_kwargs["start_time"] = start_time
             self.islands.append(island)
 
     def create_result_log(self):

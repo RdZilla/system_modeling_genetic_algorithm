@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @font-face {
+            font-family: Arial; src: url( {{font_path }});
+        }
+        body {
+            font-family: "Arial", sans-serif;
+        }
+        h1 { color: #2c3e50; }
+        .section { margin-bottom: 40px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f4f4f4; }
+        img { margin-top: 20px; max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>Fitness Results Report</h1>
+    <p>Дата создания: {{ created_at }}</p>
+
+    {% if chart_path %}
+        <h2>Итоговый график</h2>
+        <img src="{{ chart_path }}" alt="Fitness Chart">
+    {% endif %}
+
+    {% for process, entries in results.items %}
+        <div class="section">
+            <h2>Процесс: {{ process }}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Поколение</th>
+                        <th>Мин. фитнес</th>
+                        <th>Макс. фитнес</th>
+                        <th>Сред. фитнес</th>
+                        <th>Время</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.generation }}</td>
+                            <td>{{ entry.min_fitness }}</td>
+                            <td>{{ entry.max_fitness }}</td>
+                            <td>{{ entry.avg_fitness }}</td>
+                            <td>{{ entry.timestamp }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+</body>
+</html>

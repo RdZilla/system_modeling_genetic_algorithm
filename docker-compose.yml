@@ -23,9 +23,10 @@ services:
     build:
       context: .
       dockerfile: ./docker/celery/Dockerfile
-    command: celery -A modeling_system_backend worker --loglevel=debug --logfile=media/logs/celery.log --concurrency=8
+    command: celery -A modeling_system_backend worker --loglevel=debug --logfile=media/logs/celery.log --concurrency=8 --hostname=worker@%h
     volumes:
       - .:/code
+    user: "33:33"
     depends_on:
       - redis
       - postgres

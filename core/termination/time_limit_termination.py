@@ -14,6 +14,9 @@ def time_limit_termination(self):
 
     current_time = datetime.now()
 
-    if current_time >= start_time + timedelta(seconds=time_limit):
+    checked_time = start_time + timedelta(seconds=time_limit)
+    self.logger.logger_log.info(f"CHECK TIME: {start_time = }, {time_limit = }, {current_time = }, {checked_time = }")
+
+    if current_time >= checked_time:
         return True
     return False
