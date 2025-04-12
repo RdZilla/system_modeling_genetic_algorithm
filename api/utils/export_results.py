@@ -1,11 +1,19 @@
 import json
 import csv
+import logging
+import os
+import traceback
+from datetime import datetime
 
 import matplotlib.pyplot as plt
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+from xhtml2pdf.files import pisaFileObject
 
 from api.utils.custom_logger import RESULT_KEY
+from modeling_system_backend import settings
+
+logger = logging.getLogger('common')
 
 
 def save_results_to_csv(results, filename="results/fitness_results.csv", only_best_result=False):
@@ -83,30 +91,26 @@ def best_result_json(results, filename="results/fitness_plot.png"):
         json.dump(results, json_file, indent=4)
 
 
-def save_results_to_pdf(results, filename="results/fitness_results.pdf"):
-    """Сохранение результатов в PDF файл"""
-    c = canvas.Canvas(filename, pagesize=letter)
-    width, height = letter
-    y_position = height - 40
+def save_results_to_pdf(results, chart_path=None, filename="results/fitness_results.pdf"):
+    font_name = "arial.ttf"
+    font_path = os.path.join(settings.BASE_DIR, "fonts", font_name)
+    font_path = font_path.replace(os.sep, "/")
 
-    c.setFont("Helvetica", 12)
-    c.drawString(30, y_position, "Fitness Results")
-    y_position -= 20
+    html_context = {
+        "results": results,
+        "chart_path": chart_path,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "font_path": font_path
+    }
 
-    for process, data in results.items():
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(30, y_position, f"Process: {process}")
-        y_position -= 15
-        c.setFont("Helvetica", 9)
-        c.drawString(30, y_position, "Generation | Min Fitness | Max Fitness | Avg Fitness | Timestamp")
-        y_position -= 15
+    html_content = render_to_string("results_template.html", context=html_context)
 
-        for entry in data:
-            row = f"{entry.get('generation')} | {entry.get('min_fitness')} | {entry.get('max_fitness')} | {entry.get('avg_fitness')} | {entry.get('timestamp')}"
-            c.drawString(30, y_position, row)
-            y_position -= 15
-            if y_position < 40:
-                c.showPage()
-                y_position = height - 40
-
-    c.save()
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, "wb") as f:
+        pisaFileObject.getNamedFile = lambda self: self.uri
+        try:
+            pisa.CreatePDF(html_content.encode("UTF-8"), dest=f, encoding='UTF-8')
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            logger.error(traceback.format_exc())
+            return "Ошибка при создании PDF"
