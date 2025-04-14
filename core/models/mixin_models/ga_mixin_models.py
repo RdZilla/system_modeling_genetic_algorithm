@@ -61,8 +61,6 @@ class GeneticAlgorithmMixin(LogResultMixin):
         "mutation_rate",
         "crossover_rate",
 
-        "num_workers",
-
         "crossover_function",
         "fitness_function",
         "initialize_population_function",
@@ -77,8 +75,6 @@ class GeneticAlgorithmMixin(LogResultMixin):
 
         mutation_rate: Вероятность мутации
         crossover_rate: Вероятность кроссовера
-
-        num_workers: Количество рабочих процессов для параллельных вычислений
 
         adaptation_function: Функция адаптации параметров
         adaptation_kwargs: Параметры функции адаптации
@@ -109,8 +105,6 @@ class GeneticAlgorithmMixin(LogResultMixin):
 
         self.mutation_rate = float(ga_params.get("mutation_rate"))
         self.crossover_rate = float(ga_params.get("crossover_rate"))
-
-        self.num_workers = int(ga_params.get("num_workers")) or cpu_count()
 
         # Пользовательские функции
         self.adaptation_kwargs = ga_params.get("adaptation_kwargs")

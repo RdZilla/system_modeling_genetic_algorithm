@@ -99,6 +99,8 @@ class IslandGA(GeneticAlgorithmMixin):
     def init_islands(self):
         start_time = datetime.now()
 
+        self.ga_params["population_size"] = self.population_size // self.num_islands
+
         self.islands = []
         for num_island in range(self.num_islands):
             island = MasterWorkerGA(self.additional_params, self.ga_params, self.functions_routes)

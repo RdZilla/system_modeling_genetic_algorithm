@@ -35,7 +35,6 @@ class TranslationView(generics.GenericAPIView, UserFunctionMixin):
         task_config = {
             "algorithm": 'Алгоритм',
             "num_islands": 'Количество островов',
-            "num_workers": 'Количество рабочих процессов',
             "mutation_rate": 'Вероятность мутации',
             "crossover_rate": 'Вероятность кроссинговера',
             "fitness_kwargs": 'Аргументы функции приспособленности',

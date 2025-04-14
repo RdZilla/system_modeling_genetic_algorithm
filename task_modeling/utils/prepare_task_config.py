@@ -16,8 +16,6 @@ class PrepareTaskConfigMixin:
         "selection_rate",
         "crossover_rate",
 
-        "num_workers",
-
         "adaptation_function",
         "adaptation_kwargs",
 
@@ -113,6 +111,12 @@ class PrepareTaskConfigMixin:
             if task_config_obj:
                 existing_config.append(task_config_obj)
             else:
+                not_unique_name = TaskConfig.objects.filter(name=config_name)
+                if not_unique_name:
+                    error_task_configs = True
+                    error_configs.append("Конфигурация с таким названием уже существует")
+                    continue
+
                 task_config_obj = TaskConfig.objects.create(
                     name=config_name,
                     config=task_config,

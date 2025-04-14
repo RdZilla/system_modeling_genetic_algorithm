@@ -29,7 +29,7 @@ def save_results_to_csv(results, filename="results/fitness_results.csv", only_be
         return "Невозможно выгрузить данные"
 
     with open(filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter=';')
         writer.writerow(["Process", "Generation", "Min Fitness", "Max Fitness", "Avg Fitness", "Timestamp"])
 
         for process, data in results.items():

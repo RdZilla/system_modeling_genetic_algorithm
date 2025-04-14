@@ -166,7 +166,6 @@ def test_put_task_config(client, setup_task_configs):
             'mutation_function': 'bitwise_mutation',
             'mutation_kwargs': {},
             'mutation_rate': 0.01,
-            'num_workers': 3,
             'population_size': 50,
             'selection_function': 'tournament_selection',
             'selection_kwargs': {

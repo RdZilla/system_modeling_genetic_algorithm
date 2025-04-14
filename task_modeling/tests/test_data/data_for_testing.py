@@ -17,7 +17,6 @@ TEST_TASK_CONFIG = {
         'mutation_function': 'bitwise_mutation',
         'mutation_kwargs': {},
         'mutation_rate': 0.05,
-        'num_workers': 1,
         'population_size': 100,
         'selection_function': 'tournament_selection',
         'selection_kwargs': {

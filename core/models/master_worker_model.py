@@ -36,10 +36,6 @@ class MasterWorkerGA(GeneticAlgorithmMixin):
         results = task_group.apply().get(timeout=300, disable_sync_subtasks=False)
         return np.array(results)
 
-        # with Pool(processes=self.num_workers) as pool:
-        #     fitness_values = pool.map(self.fitness_function, population)
-        # return np.array(fitness_values)
-
     def check_termination_conditions(self):
         """Проверка условий завершения алгоритма."""
         if self.termination_function:
